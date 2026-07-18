@@ -7,12 +7,14 @@ const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
   weight: ["300", "400", "500", "600", "700", "800", "900"],
+  preload: false,
 });
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   weight: ["300", "400", "500", "600", "700"],
+  preload: false,
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://anfitness.in";
@@ -124,8 +126,20 @@ const localBusinessSchema = {
     {
       "@type": "OpeningHoursSpecification",
       dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-      opens: "05:30",
-      closes: "22:00",
+      opens: "05:00",
+      closes: "12:00",
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      opens: "16:00",
+      closes: "22:30",
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: ["Sunday"],
+      opens: "06:00",
+      closes: "10:00",
     },
   ],
   priceRange: "₹₹",
@@ -173,7 +187,6 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/assets/logos/favicon.svg" type="image/svg+xml" />
         <link rel="preload" href="/assets/logos/favicon.svg" as="image" type="image/svg+xml" fetchPriority="high" />
-        <link rel="preload" href="/assets/hero/hero-1080p.webm" as="video" type="video/webm" fetchPriority="high" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}

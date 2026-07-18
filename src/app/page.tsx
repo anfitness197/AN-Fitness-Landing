@@ -202,6 +202,11 @@ export default function Home() {
               >
                 Palla Main Road, Palla, Khordha, 752056
               </a>
+              <div className="text-zinc-600 text-[9px] sm:text-[10px] uppercase font-mono mt-1 text-center md:text-left leading-relaxed">
+                <span className="text-zinc-500 font-bold block mb-0.5">OPENING HOURS</span>
+                Mon - Sat: 5:00 AM - 12:00 PM, 4:00 PM - 10:30 PM <br />
+                Sun: 6:00 AM - 10:00 AM
+              </div>
             </div>
             <div className="flex flex-wrap justify-center gap-4 sm:gap-6 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] md:text-xs">
               <Link href="/memberships" className="hover:text-white transition-colors">Memberships</Link>

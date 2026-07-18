@@ -110,6 +110,24 @@ const compressImage = async (file: File): Promise<File> => {
   });
 };
 
+const generateWhatsappMessage = (title: string, price: string, subtitle: string) => {
+  const cleanTitle = title.trim();
+  const cleanPrice = price.trim() === "₹" ? "" : price.trim();
+  const cleanSubtitle = subtitle.trim();
+  
+  let msg = "Hi AN Fitness, I want to claim the offer";
+  if (cleanTitle) {
+    msg += `: ${cleanTitle}`;
+  }
+  if (cleanPrice) {
+    msg += ` for ${cleanPrice}`;
+  }
+  if (cleanSubtitle) {
+    msg += ` (${cleanSubtitle})`;
+  }
+  return msg;
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"offers" | "memberships" | "gallery" | "settings">("offers");
@@ -137,6 +155,7 @@ export default function AdminDashboard() {
   const [offers, setOffers] = useState<OfferCard[]>([]);
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
   const [newOffer, setNewOffer] = useState<OfferCard | null>(null);
+  const [isWhatsappDirty, setIsWhatsappDirty] = useState(false);
 
   const [memberships, setMemberships] = useState<MembershipCard[]>([]);
   const [editingMembershipId, setEditingMembershipId] = useState<string | null>(null);
@@ -756,16 +775,19 @@ export default function AdminDashboard() {
           {/* Add buttons depending on tab */}
           {activeTab === "offers" && !newOffer && (
             <button
-              onClick={() => setNewOffer({
-                id: `offer-${Date.now()}`,
-                title: "",
-                subtitle: "2 Persons Access",
-                price: "₹",
-                badge: "",
-                features: "",
-                whatsappText: "Hi AN Fitness, I want to claim the offer: ",
-                active: 1
-              })}
+              onClick={() => {
+                setNewOffer({
+                  id: `offer-${Date.now()}`,
+                  title: "",
+                  subtitle: "2 Persons Access",
+                  price: "₹",
+                  badge: "",
+                  features: "",
+                  whatsappText: "Hi AN Fitness, I want to claim the offer",
+                  active: 1
+                });
+                setIsWhatsappDirty(false);
+              }}
               className="flex items-center gap-2 bg-brandRed hover:bg-brandRed-light text-white font-black tracking-widest text-xs uppercase px-4 py-3 rounded-xl shadow-lg shadow-brandRed/20 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
             >
               <Plus size={14} />
@@ -903,7 +925,14 @@ export default function AdminDashboard() {
                             <input
                               type="text"
                               value={newOffer.title}
-                              onChange={(e) => setNewOffer({ ...newOffer, title: e.target.value })}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const updated = { ...newOffer, title: val };
+                                if (!isWhatsappDirty) {
+                                  updated.whatsappText = generateWhatsappMessage(val, newOffer.price, newOffer.subtitle);
+                                }
+                                setNewOffer(updated);
+                              }}
                               placeholder="CARD TITLE (e.g. 6 MONTHS + 2 FREE)"
                               className="bg-zinc-950 border border-zinc-800 focus:border-brandRed text-sm sm:text-base font-black text-white placeholder-zinc-700 rounded-md outline-none w-full px-3 py-2 uppercase"
                             />
@@ -914,14 +943,28 @@ export default function AdminDashboard() {
                             <input
                               type="text"
                               value={newOffer.price}
-                              onChange={(e) => setNewOffer({ ...newOffer, price: e.target.value })}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const updated = { ...newOffer, price: val };
+                                if (!isWhatsappDirty) {
+                                  updated.whatsappText = generateWhatsappMessage(newOffer.title, val, newOffer.subtitle);
+                                }
+                                setNewOffer(updated);
+                              }}
                               placeholder="PRICE (e.g. ₹12,000)"
                               className="bg-zinc-950 border border-zinc-800 focus:border-brandRed text-sm font-black text-brandRed placeholder-zinc-700 rounded-md outline-none w-full px-3 py-2"
                             />
                             <input
                               type="text"
                               value={newOffer.subtitle}
-                              onChange={(e) => setNewOffer({ ...newOffer, subtitle: e.target.value })}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const updated = { ...newOffer, subtitle: val };
+                                if (!isWhatsappDirty) {
+                                  updated.whatsappText = generateWhatsappMessage(newOffer.title, newOffer.price, val);
+                                }
+                                setNewOffer(updated);
+                              }}
                               placeholder="SUBTITLE (e.g. 2 Persons)"
                               className="bg-zinc-950 border border-zinc-800 focus:border-brandRed text-xs text-zinc-400 placeholder-zinc-700 rounded-md outline-none w-full px-3 py-2"
                             />
@@ -946,7 +989,10 @@ export default function AdminDashboard() {
                             <input
                               type="text"
                               value={newOffer.whatsappText}
-                              onChange={(e) => setNewOffer({ ...newOffer, whatsappText: e.target.value })}
+                              onChange={(e) => {
+                                setIsWhatsappDirty(true);
+                                setNewOffer({ ...newOffer, whatsappText: e.target.value });
+                              }}
                               placeholder="Hi AN Fitness, I want to claim the..."
                               className="bg-zinc-950 border border-zinc-800 focus:border-brandRed text-[10px] text-zinc-400 placeholder-zinc-700 rounded-md outline-none w-full px-3 py-2"
                             />
@@ -999,16 +1045,19 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => setNewOffer({
-                        id: `offer-${Date.now()}`,
-                        title: "",
-                        subtitle: "2 Persons Access",
-                        price: "₹",
-                        badge: "",
-                        features: "",
-                        whatsappText: "Hi AN Fitness, I want to claim the offer: ",
-                        active: 1
-                      })}
+                      onClick={() => {
+                        setNewOffer({
+                          id: `offer-${Date.now()}`,
+                          title: "",
+                          subtitle: "2 Persons Access",
+                          price: "₹",
+                          badge: "",
+                          features: "",
+                          whatsappText: "Hi AN Fitness, I want to claim the offer",
+                          active: 1
+                        });
+                        setIsWhatsappDirty(false);
+                      }}
                       className="w-full flex items-center justify-center gap-2 border border-dashed border-zinc-800 hover:border-brandRed/40 py-8 rounded-2xl text-zinc-500 hover:text-brandRed text-xs font-mono uppercase tracking-widest transition-all cursor-pointer"
                     >
                       <Plus size={16} />

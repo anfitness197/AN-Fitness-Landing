@@ -75,7 +75,7 @@ export default function ContactPage() {
             OPEN WHATSAPP CHAT
           </a>
 
-          <div className="w-full max-w-sm border-t border-zinc-900 pt-6 mt-2">
+          <div className="w-full max-w-sm border-t border-zinc-900 pt-6 mt-2 flex flex-col items-center gap-4">
             <a
               href={MAPS_URL}
               target="_blank"
@@ -85,6 +85,27 @@ export default function ContactPage() {
               <MapPin size={14} className="text-brandRed group-hover:scale-110 transition-transform" />
               <span>Palla Main Road, Palla, Khordha, 752056</span>
             </a>
+
+            <div className="w-full flex flex-col items-center gap-2 bg-zinc-900/10 border border-zinc-900/50 rounded-2xl p-4">
+              <span className="text-[9px] sm:text-[10px] text-brandRed font-black uppercase tracking-[0.3em] font-mono mb-1">
+                OPENING HOURS
+              </span>
+              <div className="w-full flex flex-col gap-2 text-zinc-400 text-xs font-light">
+                <div className="flex justify-between border-b border-zinc-900/55 pb-2">
+                  <span className="font-semibold text-zinc-300">Mon - Sat:</span>
+                  <span className="font-mono text-right">
+                    5:00 AM - 12:00 PM <br />
+                    4:00 PM - 10:30 PM
+                  </span>
+                </div>
+                <div className="flex justify-between pt-1">
+                  <span className="font-semibold text-zinc-300">Sunday:</span>
+                  <span className="font-mono text-right text-brandRed font-bold">
+                    6:00 AM - 10:00 AM
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
