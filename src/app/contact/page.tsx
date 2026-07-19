@@ -75,36 +75,54 @@ export default function ContactPage() {
             OPEN WHATSAPP CHAT
           </a>
 
-          <div className="w-full max-w-sm border-t border-zinc-900 pt-6 mt-2 flex flex-col items-center gap-4">
-            <a
-              href={MAPS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 text-zinc-500 hover:text-white transition-colors text-[10px] sm:text-xs font-mono uppercase tracking-widest group"
-            >
-              <MapPin size={14} className="text-brandRed group-hover:scale-110 transition-transform" />
-              <span>Palla Main Road, Palla, Khordha, 752056</span>
-            </a>
+          <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6 items-start border-t border-zinc-900 pt-8 mt-4">
+            {/* Location Details & Hours */}
+            <div className="flex flex-col gap-4">
+              <a
+                href={MAPS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center md:justify-start gap-2 text-zinc-300 hover:text-white transition-colors text-xs font-mono uppercase tracking-widest group bg-zinc-900/40 border border-zinc-800/60 rounded-2xl p-4"
+              >
+                <MapPin size={16} className="text-brandRed group-hover:scale-110 transition-transform shrink-0" />
+                <span>Palla Main Road, Palla, Khordha, 752056</span>
+              </a>
 
-            <div className="w-full flex flex-col items-center gap-2 bg-zinc-900/10 border border-zinc-900/50 rounded-2xl p-4">
-              <span className="text-[9px] sm:text-[10px] text-brandRed font-black uppercase tracking-[0.3em] font-mono mb-1">
-                OPENING HOURS
-              </span>
-              <div className="w-full flex flex-col gap-2 text-zinc-400 text-xs font-light">
-                <div className="flex justify-between border-b border-zinc-900/55 pb-2">
-                  <span className="font-semibold text-zinc-300">Mon - Sat:</span>
-                  <span className="font-mono text-right">
-                    5:00 AM - 12:00 PM <br />
-                    4:00 PM - 10:30 PM
-                  </span>
-                </div>
-                <div className="flex justify-between pt-1">
-                  <span className="font-semibold text-zinc-300">Sunday:</span>
-                  <span className="font-mono text-right text-brandRed font-bold">
-                    6:00 AM - 10:00 AM
-                  </span>
+              <div className="w-full flex flex-col items-center md:items-start gap-2 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-5">
+                <span className="text-[10px] text-brandRed font-black uppercase tracking-[0.3em] font-mono mb-1">
+                  OPENING HOURS
+                </span>
+                <div className="w-full flex flex-col gap-3 text-zinc-400 text-xs font-light">
+                  <div className="flex justify-between border-b border-zinc-800/50 pb-2">
+                    <span className="font-semibold text-zinc-300">Mon - Sat:</span>
+                    <span className="font-mono text-right">
+                      5:00 AM - 12:00 PM <br />
+                      4:00 PM - 10:30 PM
+                    </span>
+                  </div>
+                  <div className="flex justify-between pt-1">
+                    <span className="font-semibold text-zinc-300">Sunday:</span>
+                    <span className="font-mono text-right text-brandRed font-bold">
+                      6:00 AM - 10:00 AM
+                    </span>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            {/* Embedded Google Maps Container */}
+            <div className="w-full h-[280px] sm:h-[320px] rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl relative bg-zinc-900 group">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4832.664209148892!2d85.60669497611443!3d20.167694416793715!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a19ad001a4f67d1%3A0x97d65eb0fb90f075!2sAN%20Fitness!5e1!3m2!1sen!2sin!4v1784461815057!5m2!1sen!2sin"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen={true}
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                className="w-full h-full border-0"
+                title="AN Fitness Location Map"
+              />
             </div>
           </div>
         </div>

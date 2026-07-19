@@ -22,22 +22,26 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://anfitness.in";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "AN Fitness | Best Gym & Training Club | Khordha",
-    template: "%s | AN Fitness",
+    default: "AN Fitness | Best Gym in Khordha & Premier Training Club",
+    template: "%s | AN Fitness Khordha",
   },
   description:
-    "Experience the best gym in Khordha at AN Fitness. Proper strength zones, elite personal coaching, Zumba classes, and a premium training environment. Forge your steel.",
+    "AN Fitness is recognized as the best gym in Khordha, Odisha. Featuring world-class heavy strength decks, personal coaching, Zumba classes, and premium facilities in Palla.",
   keywords: [
+    "best gym in khordha",
+    "best gym khordha",
     "AN Fitness",
-    "gym Khordha",
-    "fitness club Khordha",
-    "gym near me Khordha",
-    "strength training Odisha",
-    "personal trainer Khordha",
-    "Zumba classes Khordha",
-    "best gym Khordha",
-    "AN Fitness Khordha",
-    "workout gym Palla",
+    "gym in khordha",
+    "fitness club khordha",
+    "top rated gym khordha",
+    "unisex gym khordha",
+    "personal trainer khordha",
+    "best fitness centre in khordha",
+    "gym near me khordha",
+    "zumba classes khordha",
+    "strength training khordha",
+    "AN Fitness Palla Khordha",
+    "weight loss gym khordha",
   ],
   authors: [{ name: "AN Fitness" }],
   creator: "AN Fitness",
@@ -46,7 +50,7 @@ export const metadata: Metadata = {
   manifest: "/assets/logos/site.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "AN Fitness",
+    title: "AN Fitness Khordha",
     statusBarStyle: "black-translucent",
   },
   icons: {
@@ -58,24 +62,24 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     url: siteUrl,
-    siteName: "AN Fitness",
-    title: "AN Fitness | Best Gym & Training Club | Khordha",
+    siteName: "AN Fitness - Best Gym in Khordha",
+    title: "AN Fitness | Best Gym in Khordha & Premier Training Club",
     description:
-      "Khordha's best gym and premier training club. State-of-the-art strength decks, custom combat rings, recovery zone, certified coaches, and Zumba classes.",
+      "Looking for the best gym in Khordha? AN Fitness delivers state-of-the-art strength decks, personal coaching, recovery zones, and Zumba classes.",
     images: [
       {
         url: "/assets/logos/og-image.png",
         width: 1200,
         height: 630,
-        alt: "AN Fitness - Best Gym & Training Club Khordha",
+        alt: "AN Fitness - Best Gym in Khordha, Odisha",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "AN Fitness | Best Gym & Training Club | Khordha",
+    title: "AN Fitness | Best Gym in Khordha",
     description:
-      "Khordha's best gym and premier training club. Strength decks, personal coaching, Zumba, and premium facilities.",
+      "Khordha's #1 premier gym & fitness club. Professional trainers, modern equipment, and Zumba classes.",
     images: ["/assets/logos/og-image.png"],
   },
   robots: {
@@ -104,9 +108,9 @@ export const viewport: Viewport = {
 const localBusinessSchema = {
   "@context": "https://schema.org",
   "@type": "HealthClub",
-  name: "AN Fitness",
+  name: "AN Fitness - Best Gym in Khordha",
   description:
-    "Khordha's best gym and premier training club offering strength training, personal coaching, Zumba classes, and premium gym facilities.",
+    "AN Fitness is the best gym in Khordha, offering state-of-the-art strength decks, personal coaching, Zumba classes, and premium workout equipment.",
   url: siteUrl,
   telephone: "+919867195346",
   address: {
@@ -119,8 +123,8 @@ const localBusinessSchema = {
   },
   geo: {
     "@type": "GeoCoordinates",
-    latitude: "20.1825",
-    longitude: "85.6167",
+    latitude: "20.1677",
+    longitude: "85.6067",
   },
   openingHoursSpecification: [
     {
@@ -170,6 +174,37 @@ const organizationSchema = {
   sameAs: ["https://instagram.com/an_fitness2025"],
 };
 
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "Which is the best gym in Khordha?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "AN Fitness is widely recognized as the best gym in Khordha, featuring top-quality strength machines, certified personal coaches, Zumba sessions, and a hygienic environment."
+      }
+    },
+    {
+      "@type": "Question",
+      name: "Where is AN Fitness located in Khordha?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "AN Fitness is located on Palla Main Road, Palla, Khordha, Odisha 752056."
+      }
+    },
+    {
+      "@type": "Question",
+      name: "What facilities are offered at AN Fitness Khordha?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "AN Fitness offers strength training, personal coaching, cardio deck, Zumba classes, recovery saunas, and custom workout programs."
+      }
+    }
+  ]
+};
+
 const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
@@ -198,6 +233,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       </head>
       <body

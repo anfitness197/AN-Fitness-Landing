@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, X, Maximize2, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Maximize2, Minimize2, Loader2, ImageOff } from "lucide-react";
 
 interface GalleryItem {
   id: string;
@@ -26,21 +26,24 @@ const GalleryImage: React.FC<{ src: string; alt: string; className?: string }> =
   const [error, setError] = useState(false);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full bg-zinc-900 overflow-hidden">
       {!loaded && !error && (
-        <div className="absolute inset-0 bg-zinc-900 animate-shimmer" />
+        <div className="absolute inset-0 bg-zinc-900 animate-pulse flex items-center justify-center">
+          <Loader2 size={18} className="animate-spin text-zinc-700" />
+        </div>
       )}
       {error ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
-          <span className="text-[9px] text-zinc-600 font-mono uppercase tracking-wider">Failed to load</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 p-2 text-center">
+          <ImageOff size={20} className="text-zinc-700 mb-1" />
+          <span className="text-[9px] text-zinc-600 font-mono uppercase tracking-wider">Image Unavailable</span>
         </div>
       ) : (
-        <Image
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
           src={src}
           alt={alt}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className={`${className} object-cover transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
+          loading="lazy"
+          className={`${className} object-cover w-full h-full transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}
         />
@@ -54,6 +57,7 @@ export default function GalleryPage() {
   const [photos, setPhotos] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     async function loadGallery() {
@@ -103,6 +107,16 @@ export default function GalleryPage() {
     loadGallery();
   }, []);
 
+  const filteredPhotos = selectedCategory === "all"
+    ? photos
+    : photos.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
+
+  // Reset lightbox if category changes
+  const handleCategoryChange = (catId: string) => {
+    setSelectedCategory(catId);
+    setLightboxIndex(null);
+  };
+
   useEffect(() => {
     if (lightboxIndex !== null) {
       document.body.style.overflow = "hidden";
@@ -115,15 +129,28 @@ export default function GalleryPage() {
   }, [lightboxIndex]);
 
   useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  useEffect(() => {
     if (lightboxIndex === null) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
         setLightboxIndex(null);
       } else if (e.key === "ArrowLeft") {
-        setLightboxIndex((prev) => (prev !== null ? (prev - 1 + photos.length) % photos.length : null));
+        setLightboxIndex((prev) => (prev !== null ? (prev - 1 + filteredPhotos.length) % filteredPhotos.length : null));
       } else if (e.key === "ArrowRight") {
-        setLightboxIndex((prev) => (prev !== null ? (prev + 1) % photos.length : null));
+        setLightboxIndex((prev) => (prev !== null ? (prev + 1) % filteredPhotos.length : null));
       }
     };
 
@@ -131,11 +158,26 @@ export default function GalleryPage() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [lightboxIndex, photos.length]);
+  }, [lightboxIndex, filteredPhotos.length]);
 
-  const filteredPhotos = selectedCategory === "all"
-    ? photos
-    : photos.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
+  const toggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  const closeLightbox = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    setLightboxIndex(null);
+  };
+
+  const currentPhoto = lightboxIndex !== null && filteredPhotos[lightboxIndex] ? filteredPhotos[lightboxIndex] : null;
 
   return (
     <div className="relative min-h-screen bg-zinc-950 flex flex-col justify-between overflow-x-hidden text-white pt-20 sm:pt-24 pb-12 sm:pb-16">
@@ -166,7 +208,7 @@ export default function GalleryPage() {
           {CATEGORIES.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
+              onClick={() => handleCategoryChange(cat.id)}
               className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-black tracking-widest uppercase transition-all duration-300 border cursor-pointer ${selectedCategory === cat.id
                 ? "bg-brandRed border-brandRed text-white shadow-lg shadow-brandRed/20"
                 : "bg-zinc-900/30 border-zinc-800/80 text-zinc-400 hover:text-white hover:border-zinc-700"
@@ -189,10 +231,10 @@ export default function GalleryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-            {filteredPhotos.map((photo) => (
+            {filteredPhotos.map((photo, index) => (
               <div
                 key={photo.id}
-                onClick={() => setLightboxIndex(photos.indexOf(photo))}
+                onClick={() => setLightboxIndex(index)}
                 className="group relative aspect-square rounded-xl sm:rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-900/80 hover:border-zinc-800 shadow-xl cursor-pointer transition-all duration-300"
               >
                 <GalleryImage
@@ -201,9 +243,9 @@ export default function GalleryPage() {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-95 group-hover:brightness-100"
                 />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 sm:p-5" />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 sm:p-5 pointer-events-none" />
 
-                <div className="absolute bottom-3 sm:bottom-5 left-3 sm:left-5 right-3 sm:right-5 z-10 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 flex justify-between items-center gap-2 sm:gap-3">
+                <div className="absolute bottom-3 sm:bottom-5 left-3 sm:left-5 right-3 sm:right-5 z-10 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 flex justify-between items-center gap-2 sm:gap-3 pointer-events-none">
                   <div className="flex flex-col min-w-0">
                     <span className="text-[7px] sm:text-[8px] font-mono font-bold tracking-widest text-brandRed uppercase leading-none mb-1">
                       {photo.category}
@@ -222,59 +264,93 @@ export default function GalleryPage() {
         )}
       </div>
 
-      {lightboxIndex !== null && (
+      {currentPhoto && (
         <div 
-          onClick={() => setLightboxIndex(null)}
-          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 cursor-zoom-out"
+          onClick={closeLightbox}
+          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6"
         >
-          <button
-            onClick={() => setLightboxIndex(null)}
-            className="absolute top-4 sm:top-6 right-4 sm:right-6 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-zinc-900 border border-zinc-800 hover:border-brandRed hover:bg-zinc-800 flex items-center justify-center text-white transition-all z-50 cursor-pointer"
-            aria-label="Close Lightbox"
-          >
-            <X size={18} />
-          </button>
-
+          {/* Top Controls Bar */}
           <div 
-            onClick={(e) => e.stopPropagation()}
-            className="relative max-w-5xl max-h-[85vh] w-full h-full flex flex-col justify-center items-center gap-3 sm:gap-4 cursor-default"
+            onClick={(e) => e.stopPropagation()} 
+            className="w-full max-w-6xl flex justify-between items-center z-[110]"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photos[lightboxIndex].url}
-              alt={photos[lightboxIndex].title}
-              className="max-w-full max-h-[75vh] object-contain rounded-xl sm:rounded-2xl select-none"
-            />
-            <div className="text-center">
+            <div className="flex flex-col">
               <span className="text-[8px] sm:text-[9px] font-mono tracking-widest text-brandRed uppercase font-bold">
-                {photos[lightboxIndex].category}
+                {currentPhoto.category}
               </span>
-              <h2 className="text-xs sm:text-sm font-black uppercase text-white mt-1">
-                {photos[lightboxIndex].title}
+              <h2 className="text-xs sm:text-sm font-black uppercase text-white truncate max-w-xs sm:max-w-md">
+                {currentPhoto.title || "AN FITNESS GALLERY"}
               </h2>
             </div>
 
-            {photos.length > 1 && (
-              <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between pointer-events-none px-2 sm:px-4">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleFullscreen}
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-zinc-900 border border-zinc-800 hover:border-brandRed hover:bg-zinc-800 flex items-center justify-center text-zinc-300 hover:text-white transition-all cursor-pointer"
+                aria-label="Toggle Fullscreen"
+                title="Toggle Fullscreen"
+              >
+                {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+              </button>
+
+              <button
+                onClick={closeLightbox}
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-zinc-900 border border-zinc-800 hover:border-brandRed hover:bg-brandRed hover:border-brandRed flex items-center justify-center text-zinc-300 hover:text-white transition-all cursor-pointer"
+                aria-label="Close Lightbox"
+                title="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Center Main Image Container */}
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-5xl max-h-[78vh] w-full flex-1 flex items-center justify-center my-auto p-2"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={currentPhoto.url}
+              alt={currentPhoto.title || "Gallery Preview"}
+              className="max-w-full max-h-[75vh] object-contain rounded-xl sm:rounded-2xl select-none shadow-2xl border border-zinc-800/50"
+            />
+
+            {filteredPhotos.length > 1 && (
+              <>
                 <button
-                  onClick={() => setLightboxIndex((lightboxIndex - 1 + photos.length) % photos.length)}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-zinc-900/80 border border-zinc-800 hover:border-brandRed text-white flex items-center justify-center pointer-events-auto cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLightboxIndex((lightboxIndex! - 1 + filteredPhotos.length) % filteredPhotos.length);
+                  }}
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-zinc-900/80 backdrop-blur border border-zinc-800 hover:border-brandRed hover:bg-brandRed text-white flex items-center justify-center transition-all cursor-pointer shadow-lg"
                   aria-label="Previous photo"
                 >
-                  <ChevronLeft size={18} />
+                  <ChevronLeft size={20} />
                 </button>
                 <button
-                  onClick={() => setLightboxIndex((lightboxIndex + 1) % photos.length)}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-zinc-900/80 border border-zinc-800 hover:border-brandRed text-white flex items-center justify-center pointer-events-auto cursor-pointer rotate-180"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLightboxIndex((lightboxIndex! + 1) % filteredPhotos.length);
+                  }}
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-zinc-900/80 backdrop-blur border border-zinc-800 hover:border-brandRed hover:bg-brandRed text-white flex items-center justify-center transition-all cursor-pointer shadow-lg"
                   aria-label="Next photo"
                 >
-                  <ChevronLeft size={18} />
+                  <ChevronRight size={20} />
                 </button>
-              </div>
+              </>
             )}
+          </div>
+
+          {/* Bottom Counter */}
+          <div className="text-center z-[110]">
+            <span className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-widest">
+              {lightboxIndex! + 1} / {filteredPhotos.length}
+            </span>
           </div>
         </div>
       )}
     </div>
   );
 }
+

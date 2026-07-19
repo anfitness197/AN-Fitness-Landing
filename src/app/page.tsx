@@ -10,6 +10,7 @@ import { OffersCarousel } from "@/components/offers-carousel";
 import { ReviewsMarquee } from "@/components/reviews-marquee";
 import { LandingGallery } from "@/components/landing-gallery";
 import HeroVideo from "@/components/hero-video";
+import { MapPin, Navigation } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "AN Fitness | Best Gym & Training Club | Khordha",
@@ -54,15 +55,21 @@ export default function Home() {
             Welcome to AN Fitness. Start your journey today with our state-of-the-art strength equipment, and expert personal coaching.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8 w-full sm:w-auto justify-center">
+          <div className="flex flex-col items-center gap-3 sm:gap-4 mt-6 sm:mt-8 w-full max-w-md mx-auto">
             <Link href="#offers" className="w-full sm:w-auto">
-              <RainbowButton as="span" className="w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 text-[10px] sm:text-xs md:text-sm font-black tracking-widest">
+              <RainbowButton as="span" className="w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-3.5 text-[10px] sm:text-xs md:text-sm font-black tracking-widest uppercase">
                 START TRAINING
               </RainbowButton>
             </Link>
-            <Link href="#features" className="inline-flex items-center justify-center border border-zinc-800 hover:border-brandRed bg-zinc-950/80 hover:bg-zinc-900/50 backdrop-blur-sm text-white px-8 sm:px-10 py-3 sm:py-4 rounded-full text-[10px] sm:text-xs md:text-sm font-black tracking-widest uppercase transition-all duration-300 w-full sm:w-auto">
-              EXPLORE AN FITNESS
-            </Link>
+
+            <div className="flex flex-row items-center justify-center gap-2.5 sm:gap-4 w-full">
+              <Link href="#features" className="flex-1 sm:flex-initial inline-flex items-center justify-center border border-zinc-800 hover:border-brandRed bg-zinc-950/80 hover:bg-zinc-900/50 backdrop-blur-sm text-white px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap">
+                EXPLORE
+              </Link>
+              <Link href="/contact" className="flex-1 sm:flex-initial inline-flex items-center justify-center border border-zinc-800 hover:border-brandRed bg-zinc-950/80 hover:bg-zinc-900/50 backdrop-blur-sm text-white hover:text-white px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap">
+                CONTACT
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -185,6 +192,81 @@ export default function Home() {
                 JOIN AN FITNESS NOW
               </RainbowButton>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section id="location" className="py-16 sm:py-24 px-4 sm:px-6 md:px-12 bg-zinc-950 border-t border-zinc-900 relative">
+        <div className="max-w-7xl mx-auto flex flex-col gap-8 sm:gap-12">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+            <div className="flex flex-col gap-3">
+              <span className="text-[9px] sm:text-[10px] text-brandRed font-black uppercase tracking-[0.3em] font-mono bg-brandRed/10 px-3 py-1 rounded self-start">
+                VISIT THE ARENA
+              </span>
+              <h2 className="font-heading font-black text-2xl sm:text-4xl md:text-5xl uppercase tracking-tight text-white">
+                FIND AN FITNESS IN KHORDHA
+              </h2>
+              <p className="text-zinc-400 text-xs sm:text-sm max-w-xl font-light">
+                Conveniently located on Palla Main Road, Khordha. Drop in for a workout session or speak with our certified coaches.
+              </p>
+            </div>
+            <a
+              href="https://maps.app.goo.gl/u3QoCsbmTL7Q6awK6"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-brandRed text-white px-5 py-3 rounded-full text-xs font-mono uppercase tracking-widest transition-all duration-300 group shadow-lg shrink-0"
+            >
+              <Navigation size={14} className="text-brandRed group-hover:rotate-45 transition-transform" />
+              GET DIRECTIONS ON GOOGLE MAPS
+            </a>
+          </div>
+
+          <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 w-full h-[320px] sm:h-[420px] rounded-2xl sm:rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl relative bg-zinc-900">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4832.664209148892!2d85.60669497611443!3d20.167694416793715!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a19ad001a4f67d1%3A0x97d65eb0fb90f075!2sAN%20Fitness!5e1!3m2!1sen!2sin!4v1784461815057!5m2!1sen!2sin"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen={true}
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                className="w-full h-full grayscale opacity-85 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
+                title="AN Fitness Location Map Landing"
+              />
+            </div>
+
+            <div className="flex flex-col gap-4 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl sm:rounded-3xl p-6 justify-between">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-brandRed/10 border border-brandRed/20 flex items-center justify-center shrink-0">
+                    <MapPin size={18} className="text-brandRed" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">FACILITY ADDRESS</span>
+                    <span className="text-sm font-bold text-white mt-0.5">Palla Main Road, Palla, Khordha, Odisha 752056</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-zinc-800/60 pt-4 flex flex-col gap-3">
+                  <span className="text-[10px] font-mono text-brandRed uppercase font-black tracking-widest">WORKOUT HOURS</span>
+                  <div className="flex justify-between text-xs border-b border-zinc-800/40 pb-2">
+                    <span className="text-zinc-400">Monday - Saturday:</span>
+                    <span className="font-mono text-white text-right">5:00 AM - 12:00 PM<br />4:00 PM - 10:30 PM</span>
+                  </div>
+                  <div className="flex justify-between text-xs pt-1">
+                    <span className="text-zinc-400">Sunday:</span>
+                    <span className="font-mono text-brandRed font-bold">6:00 AM - 10:00 AM</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-zinc-800/60 pt-4">
+                <Link href="/contact" className="w-full flex items-center justify-center gap-2 bg-brandRed hover:bg-red-700 text-white font-bold text-xs uppercase tracking-widest py-3.5 rounded-xl transition-colors shadow-lg shadow-brandRed/20">
+                  CONTACT GYM DESK
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>

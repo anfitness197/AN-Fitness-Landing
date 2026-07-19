@@ -6,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Plus, Save, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, 
-  Dumbbell, MessageSquare, ShieldAlert, Key, LogOut, Loader2, Sparkles, RefreshCw, Megaphone
+  Dumbbell, MessageSquare, ShieldAlert, Key, LogOut, Loader2, Sparkles, RefreshCw, Megaphone, Calendar, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,17 @@ interface GalleryItem {
   url: string;
   category: string;
   title: string;
+}
+
+interface GymEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  location: string;
+  posterUrl: string;
+  category: string;
 }
 
 interface UploadTask {
@@ -130,7 +141,7 @@ const generateWhatsappMessage = (title: string, price: string, subtitle: string)
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"offers" | "memberships" | "gallery" | "settings">("offers");
+  const [activeTab, setActiveTab] = useState<"offers" | "memberships" | "gallery" | "events" | "settings">("offers");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [username, setUsername] = useState("");
 
@@ -165,6 +176,12 @@ export default function AdminDashboard() {
   const [uploadCategory, setUploadCategory] = useState("strength");
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+
+  const [events, setEvents] = useState<GymEvent[]>([]);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [newEvent, setNewEvent] = useState<GymEvent | null>(null);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [isUploadingPoster, setIsUploadingPoster] = useState(false);
 
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -205,6 +222,7 @@ export default function AdminDashboard() {
     if (activeTab === "offers") fetchOffers();
     if (activeTab === "memberships") fetchMemberships();
     if (activeTab === "gallery") fetchGallery();
+    if (activeTab === "events") fetchEvents();
     if (activeTab === "settings") fetchAnnouncement();
   }, [activeTab, isAuthenticated]);
 
@@ -534,6 +552,91 @@ export default function AdminDashboard() {
     }
   };
 
+  // --- Events API calls ---
+  const fetchEvents = async () => {
+    setIsLoadingEvents(true);
+    try {
+      const res = await fetch("/api/events");
+      const data = await res.json();
+      if (res.ok && Array.isArray(data)) setEvents(data);
+      else setEvents([]);
+    } catch (err: any) {
+      addToast(err.message || "Failed to load events", "error");
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+
+  const handleSaveEvent = async (eventData: GymEvent, isNew = false) => {
+    if (!eventData.title?.trim() || !eventData.description?.trim()) {
+      addToast("Event title and description text are required.", "error");
+      return;
+    }
+
+    try {
+      const endpoint = isNew ? "/api/events" : `/api/events/${eventData.id}`;
+      const method = isNew ? "POST" : "PUT";
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...eventData,
+          title: eventData.title.trim(),
+          description: eventData.description.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save event");
+
+      addToast(`Event "${eventData.title}" saved successfully!`, "success");
+      setEditingEventId(null);
+      setNewEvent(null);
+      fetchEvents();
+    } catch (err: any) {
+      addToast(err.message || "Failed to save event", "error");
+    }
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this event?")) return;
+    try {
+      const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete event");
+
+      addToast("Event deleted successfully!", "success");
+      fetchEvents();
+    } catch (err: any) {
+      addToast(err.message || "Failed to delete event", "error");
+    }
+  };
+
+  const handlePosterFileUpload = async (file: File, updateUrl: (url: string) => void) => {
+    setIsUploadingPoster(true);
+    try {
+      const compressed = await compressImage(file);
+      const formData = new FormData();
+      formData.append("file", compressed);
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Poster upload failed");
+
+      updateUrl(data.url);
+      addToast("Poster uploaded successfully!", "success");
+    } catch (err: any) {
+      addToast(err.message || "Poster upload failed", "error");
+    } finally {
+      setIsUploadingPoster(false);
+    }
+  };
+
   // --- Password API calls ---
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -686,6 +789,17 @@ export default function AdminDashboard() {
           >
             <ImageIcon size={16} />
             Gym Gallery
+          </button>
+          <button
+            onClick={() => setActiveTab("events")}
+            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${
+              activeTab === "events" 
+                ? "bg-brandRed text-white shadow-lg shadow-brandRed/20" 
+                : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
+            }`}
+          >
+            <Calendar size={16} />
+            Events Management
           </button>
           <button
             onClick={() => setActiveTab("settings")}
@@ -1732,7 +1846,7 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   ))}
-                  
+
                   {gallery.length === 0 && (
                     <div className="col-span-full py-16 text-center text-zinc-600 text-xs font-mono uppercase tracking-widest">
                       Gallery is empty. Upload training photos.
@@ -1740,6 +1854,285 @@ export default function AdminDashboard() {
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB: EVENTS MANAGEMENT */}
+          {activeTab === "events" && (
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-zinc-900/20 border border-zinc-900 rounded-3xl p-6">
+                <div>
+                  <h3 className="font-heading font-black text-xl text-white uppercase tracking-tight flex items-center gap-3">
+                    <Calendar className="text-brandRed" size={22} />
+                    EVENTS & ANNOUNCEMENTS MANAGEMENT
+                  </h3>
+                  <p className="text-zinc-500 text-xs mt-1">
+                    Publish upcoming gym events, Zumba sessions, workshops, or competitions. Supports both poster visuals and text-only posts.
+                  </p>
+                </div>
+                
+                <button
+                  onClick={() => setNewEvent({
+                    id: `event-${Date.now()}`,
+                    title: "",
+                    description: "",
+                    date: "",
+                    time: "",
+                    location: "AN Fitness, Khordha",
+                    posterUrl: "",
+                    category: "Special Event"
+                  })}
+                  className="inline-flex items-center gap-2 bg-brandRed hover:bg-red-700 text-white font-bold text-xs uppercase tracking-widest px-5 py-3 rounded-xl transition-all cursor-pointer shadow-lg shadow-brandRed/20 shrink-0"
+                >
+                  <Plus size={16} />
+                  CREATE NEW EVENT
+                </button>
+              </div>
+
+              {/* Add / Edit Event Form Modal Card */}
+              {(newEvent || editingEventId) && (
+                <div className="bg-zinc-900/40 border border-brandRed/30 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 backdrop-blur-md animate-fadeIn">
+                  <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
+                    <h4 className="font-heading font-black text-base uppercase tracking-wider text-white">
+                      {newEvent ? "CREATE NEW EVENT" : "EDIT EVENT DETAILS"}
+                    </h4>
+                    <button
+                      onClick={() => { setNewEvent(null); setEditingEventId(null); }}
+                      className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:text-white text-zinc-500 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  {(() => {
+                    const activeEvent = newEvent || events.find(e => e.id === editingEventId);
+                    if (!activeEvent) return null;
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="flex flex-col gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">EVENT TITLE *</label>
+                            <input
+                              type="text"
+                              value={activeEvent.title}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (newEvent) setNewEvent({ ...newEvent, title: val });
+                                else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, title: val } : ev));
+                              }}
+                              placeholder="e.g. ANNUAL POWERLIFTING WORKSHOP 2026"
+                              className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-4 py-3 rounded-xl text-xs text-white outline-none"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">CATEGORY</label>
+                              <input
+                                type="text"
+                                value={activeEvent.category}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (newEvent) setNewEvent({ ...newEvent, category: val });
+                                  else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, category: val } : ev));
+                                }}
+                                placeholder="Zumba / Workshop / Offer"
+                                className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-4 py-3 rounded-xl text-xs text-white outline-none"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">DATE</label>
+                              <input
+                                type="text"
+                                value={activeEvent.date}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (newEvent) setNewEvent({ ...newEvent, date: val });
+                                  else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, date: val } : ev));
+                                }}
+                                placeholder="e.g. 25th Aug 2026"
+                                className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-4 py-3 rounded-xl text-xs text-white outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">TIME</label>
+                              <input
+                                type="text"
+                                value={activeEvent.time}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (newEvent) setNewEvent({ ...newEvent, time: val });
+                                  else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, time: val } : ev));
+                                }}
+                                placeholder="e.g. 6:00 AM - 9:00 AM"
+                                className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-4 py-3 rounded-xl text-xs text-white outline-none"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">LOCATION</label>
+                              <input
+                                type="text"
+                                value={activeEvent.location}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (newEvent) setNewEvent({ ...newEvent, location: val });
+                                  else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, location: val } : ev));
+                                }}
+                                placeholder="AN Fitness, Palla, Khordha"
+                                className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-4 py-3 rounded-xl text-xs text-white outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">POSTER IMAGE (OPTIONAL - LEAVE BLANK FOR TEXT-ONLY)</label>
+                            <div className="flex gap-2 items-center">
+                              <input
+                                type="text"
+                                value={activeEvent.posterUrl || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (newEvent) setNewEvent({ ...newEvent, posterUrl: val });
+                                  else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, posterUrl: val } : ev));
+                                }}
+                                placeholder="Poster image URL or upload below..."
+                                className="flex-1 bg-zinc-950 border border-zinc-800 focus:border-brandRed px-4 py-3 rounded-xl text-xs text-white outline-none"
+                              />
+                              <label className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-3 rounded-xl text-xs font-mono font-bold cursor-pointer transition-colors shrink-0 flex items-center gap-2">
+                                {isUploadingPoster ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                                UPLOAD
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handlePosterFileUpload(file, (url) => {
+                                        if (newEvent) setNewEvent({ ...newEvent, posterUrl: url });
+                                        else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, posterUrl: url } : ev));
+                                      });
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1.5 flex-1">
+                            <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">DESCRIPTION & DETAILS *</label>
+                            <textarea
+                              rows={4}
+                              value={activeEvent.description}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (newEvent) setNewEvent({ ...newEvent, description: val });
+                                else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, description: val } : ev));
+                              }}
+                              placeholder="Write event description, agenda, special guidelines, or registration info..."
+                              className="w-full h-full bg-zinc-950 border border-zinc-800 focus:border-brandRed p-4 rounded-xl text-xs text-white outline-none resize-none"
+                            />
+                          </div>
+
+                          <div className="flex justify-end gap-3 pt-2">
+                            <button
+                              onClick={() => { setNewEvent(null); setEditingEventId(null); }}
+                              className="px-5 py-3 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase transition-colors"
+                            >
+                              CANCEL
+                            </button>
+                            <button
+                              onClick={() => handleSaveEvent(activeEvent, !!newEvent)}
+                              className="px-6 py-3 rounded-xl bg-brandRed hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
+                            >
+                              <Save size={14} />
+                              SAVE EVENT
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Events List */}
+              <div className="bg-zinc-900/10 border border-zinc-900 rounded-3xl p-6">
+                {isLoadingEvents ? (
+                  <div className="py-16 flex items-center justify-center">
+                    <Loader2 size={32} className="animate-spin text-brandRed" />
+                  </div>
+                ) : events.length === 0 ? (
+                  <div className="py-16 text-center text-zinc-600 text-xs font-mono uppercase tracking-widest">
+                    No events published yet. Click "CREATE NEW EVENT" to add one.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {events.map((ev) => (
+                      <div
+                        key={ev.id}
+                        className="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row gap-5 justify-between items-start md:items-center hover:border-zinc-700 transition-all"
+                      >
+                        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center flex-1">
+                          {ev.posterUrl ? (
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-zinc-900 shrink-0 border border-zinc-800">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={ev.posterUrl} alt={ev.title} className="w-full h-full object-cover" />
+                            </div>
+                          ) : (
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center shrink-0 p-2 text-center">
+                              <FileText size={20} className="text-zinc-600 mb-1" />
+                              <span className="text-[8px] font-mono text-zinc-600 uppercase">Text Only</span>
+                            </div>
+                          )}
+
+                          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[8px] font-mono font-bold tracking-widest text-brandRed bg-brandRed/10 border border-brandRed/20 px-2 py-0.5 rounded uppercase">
+                                {ev.category || "General"}
+                              </span>
+                              {ev.date && (
+                                <span className="text-[9px] font-mono text-zinc-400">
+                                  {ev.date} {ev.time && `• ${ev.time}`}
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="font-heading font-black text-sm text-white uppercase truncate">
+                              {ev.title}
+                            </h4>
+                            <p className="text-zinc-400 text-xs line-clamp-2 font-light">
+                              {ev.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                          <button
+                            onClick={() => setEditingEventId(ev.id)}
+                            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                            title="Edit Event"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEvent(ev.id)}
+                            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-brandRed hover:bg-brandRed text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                            title="Delete Event"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

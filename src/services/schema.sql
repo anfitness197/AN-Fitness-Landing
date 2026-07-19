@@ -51,6 +51,18 @@ CREATE TABLE IF NOT EXISTS gallery (
     title TEXT
 );
 
+CREATE TABLE IF NOT EXISTS events (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    date TEXT,
+    time TEXT,
+    location TEXT,
+    posterUrl TEXT,
+    category TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS admin_users (
     username TEXT PRIMARY KEY,
     passwordHash TEXT

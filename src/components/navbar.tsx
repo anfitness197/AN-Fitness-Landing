@@ -40,6 +40,11 @@ const navItems: NavItem[] = [
     subheading: "View our facilities",
   },
   {
+    heading: "Events",
+    href: "/events",
+    subheading: "Workshops & notices",
+  },
+  {
     heading: "Contact",
     href: "/contact",
     subheading: "Get in touch",
