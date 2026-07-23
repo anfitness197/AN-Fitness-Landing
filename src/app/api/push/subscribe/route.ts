@@ -28,21 +28,11 @@ export async function POST(request: Request) {
 
     const db = getDB();
 
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS push_subscriptions (
-        id TEXT PRIMARY KEY,
-        endpoint TEXT UNIQUE NOT NULL,
-        p256dh TEXT NOT NULL,
-        auth TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `).catch(() => {});
-
     const subId = `sub-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
     await db
       .prepare(
-        "INSERT OR REPLACE INTO push_subscriptions (id, endpoint, p256dh, auth) VALUES (?, ?, ?, ?)"
+        "INSERT INTO push_subscriptions (id, endpoint, p256dh, auth) VALUES (?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth"
       )
       .bind(subId, endpoint, keys.p256dh, keys.auth)
       .run();

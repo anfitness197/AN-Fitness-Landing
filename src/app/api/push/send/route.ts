@@ -22,16 +22,6 @@ export async function GET() {
     const db = getDB();
     const vapid = await getOrInitVapidKeys(db);
 
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS push_subscriptions (
-        id TEXT PRIMARY KEY,
-        endpoint TEXT UNIQUE NOT NULL,
-        p256dh TEXT NOT NULL,
-        auth TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `).catch(() => {});
-
     const { results } = await db.prepare("SELECT COUNT(*) as count FROM push_subscriptions").all();
     const count = (results?.[0] as any)?.count || 0;
 
@@ -70,20 +60,6 @@ export async function POST(request: Request) {
     
     if (saveToBulletin) {
       const eventId = `${itemType}-${Date.now()}`;
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS events (
-          id TEXT PRIMARY KEY,
-          title TEXT NOT NULL,
-          description TEXT NOT NULL,
-          date TEXT,
-          time TEXT,
-          location TEXT,
-          posterUrl TEXT,
-          category TEXT,
-          type TEXT DEFAULT 'event',
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-      `).catch(() => {});
 
       try {
         await db

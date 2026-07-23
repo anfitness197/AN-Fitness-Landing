@@ -77,17 +77,6 @@ export async function generateVapidKeyPair(subject: string = "mailto:admin@anfit
 export async function getOrInitVapidKeys(db?: D1Database): Promise<VapidKeys> {
   const database = db || getDB();
 
-  await database
-    .exec(`
-      CREATE TABLE IF NOT EXISTS vapid_keys (
-        id TEXT PRIMARY KEY DEFAULT 'default',
-        public_key TEXT NOT NULL,
-        private_key TEXT NOT NULL,
-        subject TEXT DEFAULT 'mailto:admin@anfitness.in'
-      );
-    `)
-    .catch(() => {});
-
   try {
     const row: any = await database
       .prepare("SELECT public_key, private_key, subject FROM vapid_keys WHERE id = 'default'")
@@ -145,9 +134,9 @@ async function createVapidHeaders(endpoint: string, vapid: VapidKeys) {
 
   const key = await importJWK(privateJwk, "ES256");
 
-  const jwt = await new SignJWT({})
+  const jwt = await new SignJWT({ sub: vapid.subject })
+    .setProtectedHeader({ alg: "ES256" })
     .setAudience(audience)
-    .setSubject(vapid.subject)
     .setExpirationTime("12h")
     .sign(key);
 
@@ -331,18 +320,6 @@ export async function broadcastPushNotification(
   payload: PushPayload
 ): Promise<{ sent: number; failed: number; total: number; errors?: string[] }> {
   const vapidKeys = await getOrInitVapidKeys(db);
-
-  await db
-    .exec(`
-      CREATE TABLE IF NOT EXISTS push_subscriptions (
-        id TEXT PRIMARY KEY,
-        endpoint TEXT UNIQUE NOT NULL,
-        p256dh TEXT NOT NULL,
-        auth TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `)
-    .catch(() => {});
 
   let subscriptions: PushSubscriptionData[] = [];
   try {

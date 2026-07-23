@@ -54,23 +54,6 @@ export async function POST(request: Request) {
     const eventId = id || `${itemType}-${Date.now()}`;
     const db = getDB();
 
-    
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS events (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        description TEXT NOT NULL,
-        date TEXT,
-        time TEXT,
-        location TEXT,
-        posterUrl TEXT,
-        category TEXT,
-        type TEXT DEFAULT 'event',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `).catch(() => {});
-
-    
     try {
       await db
         .prepare(
@@ -115,7 +98,7 @@ export async function POST(request: Request) {
       pushStats = await broadcastPushNotification(db, {
         title: itemType === "notification" ? `📢 ${cleanTitle}` : `🏋️ New Event: ${cleanTitle}`,
         body: cleanDesc.length > 120 ? `${cleanDesc.substring(0, 117)}...` : cleanDesc,
-        icon: "/icon-192.png",
+        icon: "/assets/logos/web-app-manifest-192x192.png",
         image: (posterUrl || "").toString().trim() || undefined,
         url: "/events",
         type: itemType,

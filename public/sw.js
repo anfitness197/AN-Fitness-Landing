@@ -10,8 +10,8 @@ self.addEventListener("push", (event) => {
   let data = {
     title: "AN Fitness Update",
     body: "New update from AN Fitness!",
-    icon: "/assets/logos/favicon.svg",
-    badge: "/assets/logos/favicon.svg",
+    icon: "/assets/logos/web-app-manifest-192x192.png",
+    badge: "/assets/logos/favicon-96x96.png",
     url: "/events",
   };
 
@@ -24,18 +24,10 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  
-  self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-    for (const client of clientList) {
-      client.postMessage({ type: "PUSH_NOTIFICATION_RECEIVED", notification: data });
-    }
-  });
-
-  
   const options = {
     body: data.body,
-    icon: data.icon || "/assets/logos/favicon.svg",
-    badge: data.badge || "/assets/logos/favicon.svg",
+    icon: data.icon || "/assets/logos/web-app-manifest-192x192.png",
+    badge: data.badge || "/assets/logos/favicon-96x96.png",
     image: data.image || undefined,
     tag: data.tag || `an-fitness-${Date.now()}`,
     data: {
@@ -45,7 +37,16 @@ self.addEventListener("push", (event) => {
     requireInteraction: true,
   };
 
-  event.waitUntil(self.registration.showNotification(data.title, options));
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(data.title, options),
+      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          client.postMessage({ type: "PUSH_NOTIFICATION_RECEIVED", notification: data });
+        }
+      }),
+    ])
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {

@@ -1,6 +1,9 @@
 {
   "name": "AN Fitness",
   "short_name": "AN Fitness",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "icons": [
     {
       "src": "/assets/logos/web-app-manifest-192x192.png",

@@ -79,7 +79,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       pushStats = await broadcastPushNotification(db, {
         title: itemType === "notification" ? `📢 ${cleanTitle}` : `🏋️ ${cleanTitle}`,
         body: cleanDesc.length > 120 ? `${cleanDesc.substring(0, 117)}...` : cleanDesc,
-        icon: "/icon-192.png",
+        icon: "/assets/logos/web-app-manifest-192x192.png",
         image: (posterUrl || "").toString().trim() || undefined,
         url: "/events",
         type: itemType,
