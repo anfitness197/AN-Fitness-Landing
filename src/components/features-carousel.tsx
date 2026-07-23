@@ -39,7 +39,7 @@ const FeatureImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
       {!loaded && (
         <div className="absolute inset-0 bg-zinc-900 animate-shimmer" />
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+
       <img
         src={src}
         alt={alt}

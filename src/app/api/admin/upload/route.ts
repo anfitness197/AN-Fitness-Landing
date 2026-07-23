@@ -25,13 +25,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    // Validate MIME type is an image
+    
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
     if (!allowedTypes.includes(file.type.toLowerCase())) {
       return NextResponse.json({ error: "Only image files (JPEG, PNG, WEBP, GIF) are allowed" }, { status: 400 });
     }
 
-        // Check if IMGBB_API_KEY is configured for credit-card-free hosting
+        
     const imgbbApiKey = process.env.IMGBB_API_KEY || process.env.NEXT_PUBLIC_IMGBB_API_KEY;
 
     if (imgbbApiKey) {
@@ -60,21 +60,21 @@ export async function POST(request: Request) {
       });
     }
 
-    // Otherwise, fall back to Cloudflare R2
+    
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
 
-    // Generate unique key
+    
     const extension = file.name.split(".").pop() || "webp";
     const key = `gallery-${crypto.randomUUID()}.${extension}`;
 
-    // Upload to R2
+    
     const r2 = getR2();
     await r2.put(key, bytes, {
       httpMetadata: { contentType: file.type },
     });
 
-    // Resolve URL: If NEXT_PUBLIC_R2_PUBLIC_URL is set, use it; otherwise fallback to public bucket key
+    
     const r2PublicDomain = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || process.env.R2_PUBLIC_URL;
     const publicUrl = r2PublicDomain 
       ? `${r2PublicDomain.replace(/\/$/, "")}/${key}` 

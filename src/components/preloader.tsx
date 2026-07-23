@@ -22,7 +22,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
     }
   }, [onExitStart]);
 
-  // Asset preloading effect
+  
   useEffect(() => {
     let active = true;
     const assets = [
@@ -44,7 +44,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
       setProgress((prev) => Math.max(prev, assetProgress));
     };
 
-    // Helper for images
+    
     const loadImage = (url: string) => {
       return new Promise<void>((resolve) => {
         const img = new Image();
@@ -60,7 +60,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
       });
     };
 
-    // Helper for video
+    
     const loadVideo = (url: string) => {
       return new Promise<void>((resolve) => {
         const video = document.createElement("video");
@@ -79,7 +79,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
         video.addEventListener("canplaythrough", onCanPlay, { once: true });
         video.addEventListener("loadeddata", onCanPlay, { once: true });
 
-        // Safety timeout to prevent getting stuck
+        
         setTimeout(() => {
           if (active) {
             onCanPlay();
@@ -88,7 +88,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
       });
     };
 
-    // Start parallel preload
+    
     Promise.all(
       assets.map((asset) => {
         if (asset.type === "image") {
@@ -99,7 +99,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
       })
     );
 
-    // Fallback slow interval (trickle) so user is not stuck on 0
+    
     const fallbackInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 90) {
@@ -116,7 +116,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
     };
   }, []);
 
-  // Completion check
+  
   useEffect(() => {
     if (isPageReady && progress >= 90) {
       setProgress(100);
@@ -127,17 +127,17 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
     }
   }, [isPageReady, progress, finishPreloader]);
 
-  // Clean-up/OnComplete trigger
+  
   useEffect(() => {
     if (isDone) {
       const timer = setTimeout(() => {
         onComplete();
-      }, 800); // Match door animation duration exactly (0.8s)
+      }, 800); 
       return () => clearTimeout(timer);
     }
   }, [isDone, onComplete]);
 
-  // Global safety timeout
+  
   useEffect(() => {
     const safetyTimer = setTimeout(() => {
       setProgress(100);
@@ -173,7 +173,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
           animate={isDone ? { opacity: 1 } : { opacity: [0.3, 1, 0.3] }}
           transition={isDone ? { duration: 0.15 } : { duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+
           <img
             src="/assets/logos/favicon.svg"
             alt=""
@@ -195,7 +195,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
           animate={isDone ? { opacity: 1 } : { opacity: [0.3, 1, 0.3] }}
           transition={isDone ? { duration: 0.15 } : { duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+
           <img
             src="/assets/logos/favicon.svg"
             alt=""

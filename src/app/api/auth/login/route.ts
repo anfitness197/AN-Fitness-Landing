@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       .first<{ username: string; passwordHash: string }>();
 
     if (!user) {
-      // Avoid leaking whether username or password was incorrect, but keep it clear for admin
+      
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
@@ -34,12 +34,12 @@ export async function POST(request: Request) {
     const token = await createSession(user.username, !!rememberMe);
     const response = NextResponse.json({ success: true, user: { username: user.username } });
 
-    // Store JWT in an httpOnly secure cookie
+    
     response.cookies.set("auth-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: rememberMe ? 30 * 24 * 60 * 60 : 86400, // 30 days or 1 day
+      maxAge: rememberMe ? 30 * 24 * 60 * 60 : 86400, 
       path: "/",
     });
 

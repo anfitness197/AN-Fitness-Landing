@@ -38,7 +38,7 @@ const GalleryImage: React.FC<{ src: string; alt: string; className?: string }> =
           <span className="text-[9px] text-zinc-600 font-mono uppercase tracking-wider">Image Unavailable</span>
         </div>
       ) : (
-        /* eslint-disable-next-line @next/next/no-img-element */
+        
         <img
           src={src}
           alt={alt}
@@ -111,7 +111,7 @@ export default function GalleryPage() {
     ? photos
     : photos.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
 
-  // Reset lightbox if category changes
+  
   const handleCategoryChange = (catId: string) => {
     setSelectedCategory(catId);
     setLightboxIndex(null);
@@ -269,7 +269,7 @@ export default function GalleryPage() {
           onClick={closeLightbox}
           className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6"
         >
-          {/* Top Controls Bar */}
+
           <div 
             onClick={(e) => e.stopPropagation()} 
             className="w-full max-w-6xl flex justify-between items-center z-[110]"
@@ -304,12 +304,11 @@ export default function GalleryPage() {
             </div>
           </div>
 
-          {/* Center Main Image Container */}
           <div 
             onClick={(e) => e.stopPropagation()}
             className="relative max-w-5xl max-h-[78vh] w-full flex-1 flex items-center justify-center my-auto p-2"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+
             <img
               src={currentPhoto.url}
               alt={currentPhoto.title || "Gallery Preview"}
@@ -342,7 +341,6 @@ export default function GalleryPage() {
             )}
           </div>
 
-          {/* Bottom Counter */}
           <div className="text-center z-[110]">
             <span className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-widest">
               {lightboxIndex! + 1} / {filteredPhotos.length}

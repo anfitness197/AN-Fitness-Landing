@@ -12,7 +12,7 @@ export default function NotFound() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 sm:w-96 h-64 sm:h-96 rounded-full bg-brandRed/10 blur-[120px] pointer-events-none" />
 
       <div className="relative z-10 mb-6 sm:mb-8 animate-bounce [animation-duration:3s]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+
         <img
           src="/assets/vectors/dumbbell-iron.svg"
           alt="AN Fitness Dumbbell"

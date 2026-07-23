@@ -76,7 +76,7 @@ export default function ContactPage() {
           </a>
 
           <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6 items-start border-t border-zinc-900 pt-8 mt-4">
-            {/* Location Details & Hours */}
+
             <div className="flex flex-col gap-4">
               <a
                 href={MAPS_URL}
@@ -110,7 +110,6 @@ export default function ContactPage() {
               </div>
             </div>
 
-            {/* Embedded Google Maps Container */}
             <div className="w-full h-[280px] sm:h-[320px] rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl relative bg-zinc-900 group">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4832.664209148892!2d85.60669497611443!3d20.167694416793715!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a19ad001a4f67d1%3A0x97d65eb0fb90f075!2sAN%20Fitness!5e1!3m2!1sen!2sin!4v1784461815057!5m2!1sen!2sin"

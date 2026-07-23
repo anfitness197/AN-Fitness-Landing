@@ -21,40 +21,37 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
   try {
     const db = getDB();
-    const r2 = getR2();
 
-    // 1. Fetch item to get the key
+    
     const item = await db
       .prepare("SELECT * FROM gallery WHERE id = ?")
       .bind(id)
       .first<{ id: string; url: string }>();
 
     if (!item) {
-      return NextResponse.json({ error: "Gallery item not found" }, { status: 404 });
+      return NextResponse.json({ error: "Gallery photo not found" }, { status: 404 });
     }
 
-    // 2. Extract key from URL
-    let key = id;
+    
     try {
-      const urlObj = new URL(item.url);
-      key = urlObj.pathname.startsWith("/") ? urlObj.pathname.slice(1) : urlObj.pathname;
-    } catch (e) {
-      // Fallback to id
-    }
-
-    // 3. Delete from R2
-    try {
-      await r2.delete(key);
+      const r2 = getR2();
+      let key = id;
+      try {
+        const urlObj = new URL(item.url);
+        key = urlObj.pathname.startsWith("/") ? urlObj.pathname.slice(1) : urlObj.pathname;
+      } catch (e) {
+        
+      }
+      await r2.delete(key).catch(() => {});
     } catch (err) {
-      console.error("R2 file deletion failed:", err);
-      // We will proceed to delete from DB anyway so the database is kept clean
+      
     }
 
-    // 4. Delete from DB
+    
     await db.prepare("DELETE FROM gallery WHERE id = ?").bind(id).run();
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: "Photo deleted successfully" });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to delete gallery item" }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Failed to delete photo" }, { status: 500 });
   }
 }

@@ -60,7 +60,23 @@ CREATE TABLE IF NOT EXISTS events (
     location TEXT,
     posterUrl TEXT,
     category TEXT,
+    type TEXT DEFAULT 'event',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id TEXT PRIMARY KEY,
+    endpoint TEXT UNIQUE NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS vapid_keys (
+    id TEXT PRIMARY KEY DEFAULT 'default',
+    public_key TEXT NOT NULL,
+    private_key TEXT NOT NULL,
+    subject TEXT DEFAULT 'mailto:admin@anfitness.in'
 );
 
 CREATE TABLE IF NOT EXISTS admin_users (
@@ -71,3 +87,4 @@ CREATE TABLE IF NOT EXISTS admin_users (
 -- Seed Initial Default Admin User
 -- Username: admin, Password: admin123 (hashed with bcrypt)
 INSERT OR REPLACE INTO admin_users (username, passwordHash) VALUES ('admin', '$2a$10$wo25IyiDxc3uq.hW1vCPseKKYE/4wVdHdKi7w3MqYoL8On9SCbFkS');
+

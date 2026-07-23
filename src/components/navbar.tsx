@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, useMotionValue, AnimatePresence, Variants } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Instagram } from "lucide-react";
+import { Instagram, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RainbowButton } from "./ui/rainbow-button";
 
@@ -254,7 +254,7 @@ export const Navbar: React.FC = () => {
       )}>
         <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
           <div className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+
             <img
               src="/assets/logos/favicon.svg"
               alt="AN Fitness Logo"
@@ -266,7 +266,18 @@ export const Navbar: React.FC = () => {
           </span>
         </Link>
 
-        <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+          <Link
+            href="/events"
+            className="relative p-2 sm:p-2.5 rounded-full bg-zinc-900/90 border border-zinc-800 hover:border-red-600 hover:bg-zinc-900 text-zinc-300 transition-all flex items-center justify-center group cursor-pointer"
+            title="Latest Notifications & Events"
+            aria-label="View Latest Notifications & Events"
+          >
+            <Bell size={18} className="group-hover:scale-110 transition-transform text-zinc-300 group-hover:text-red-500" />
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-600 border border-zinc-950" />
+          </Link>
+
           <Link href="/#offers">
             <RainbowButton as="span" className="px-3 py-1.5 sm:px-4 md:px-6 md:py-2 text-[9px] sm:text-[10px] md:text-xs">
               Join Now

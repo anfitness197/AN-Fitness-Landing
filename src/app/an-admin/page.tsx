@@ -6,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Plus, Save, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, 
-  Dumbbell, MessageSquare, ShieldAlert, Key, LogOut, Loader2, Sparkles, RefreshCw, Megaphone, Calendar, FileText
+  Dumbbell, MessageSquare, ShieldAlert, Key, LogOut, Loader2, Sparkles, RefreshCw, Megaphone, Calendar, FileText, Bell, Send, CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ interface OfferCard {
   subtitle: string;
   price: string;
   badge: string;
-  features: string | string[]; // Can be JSON string from DB or array
+  features: string | string[]; 
   whatsappText: string;
   active: number;
 }
@@ -26,7 +26,7 @@ interface MembershipCard {
   name: string;
   price: number;
   billing: string;
-  features: string | string[]; // Can be JSON string from DB or array
+  features: string | string[]; 
   popular: number;
   badge: string;
 }
@@ -47,6 +47,8 @@ interface GymEvent {
   location: string;
   posterUrl: string;
   category: string;
+  type?: "event" | "notification";
+  sendPush?: boolean;
 }
 
 interface UploadTask {
@@ -182,6 +184,18 @@ export default function AdminDashboard() {
   const [newEvent, setNewEvent] = useState<GymEvent | null>(null);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [isUploadingPoster, setIsUploadingPoster] = useState(false);
+  const [adminEventsFilter, setAdminEventsFilter] = useState<"all" | "event" | "notification">("all");
+  const [showQuickPushForm, setShowQuickPushForm] = useState(false);
+
+  
+  const [pushStatus, setPushStatus] = useState<{ subscriberCount: number; vapidPublicKey: string; vapidSubject: string } | null>(null);
+  const [isLoadingPush, setIsLoadingPush] = useState(false);
+  const [pushTitle, setPushTitle] = useState("");
+  const [pushMessage, setPushMessage] = useState("");
+  const [pushImage, setPushImage] = useState("");
+  const [pushUrl, setPushUrl] = useState("/events");
+  const [pushType, setPushType] = useState<"event" | "notification">("notification");
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
 
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -222,9 +236,63 @@ export default function AdminDashboard() {
     if (activeTab === "offers") fetchOffers();
     if (activeTab === "memberships") fetchMemberships();
     if (activeTab === "gallery") fetchGallery();
-    if (activeTab === "events") fetchEvents();
+    if (activeTab === "events") {
+      fetchEvents();
+      fetchPushStatus();
+    }
     if (activeTab === "settings") fetchAnnouncement();
   }, [activeTab, isAuthenticated]);
+
+  const fetchPushStatus = async () => {
+    setIsLoadingPush(true);
+    try {
+      const res = await fetch("/api/push/send");
+      const data = await res.json();
+      if (res.ok) {
+        setPushStatus(data);
+      }
+    } catch (err: any) {
+      console.error("Failed to load push status:", err);
+    } finally {
+      setIsLoadingPush(false);
+    }
+  };
+
+  const handleSendManualPush = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pushTitle.trim() || !pushMessage.trim()) {
+      addToast("Notification title and message content are required.", "error");
+      return;
+    }
+
+    setIsBroadcasting(true);
+    try {
+      const res = await fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: pushTitle.trim(),
+          message: pushMessage.trim(),
+          image: pushImage.trim(),
+          url: pushUrl.trim() || "/events",
+          type: pushType,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Broadcast failed");
+
+      addToast(data.message || "Push notification broadcasted successfully!", "success");
+      setPushTitle("");
+      setPushMessage("");
+      setPushImage("");
+      fetchPushStatus();
+    } catch (err: any) {
+      addToast(err.message || "Failed to broadcast notification", "error");
+    } finally {
+      setIsBroadcasting(false);
+    }
+  };
 
   const fetchAnnouncement = async () => {
     try {
@@ -236,11 +304,11 @@ export default function AdminDashboard() {
         setAnnouncementActive(data.active === 1);
       }
     } catch {
-      // Keep defaults
+      
     }
   };
 
-  // --- Offers API calls ---
+  
   const fetchOffers = async () => {
     setIsLoadingOffers(true);
     try {
@@ -257,7 +325,7 @@ export default function AdminDashboard() {
 
   const handleSaveOffer = async (offer: OfferCard, isNew = false) => {
     try {
-      // Parse features back to array if it is string
+      
       let parsedFeatures = offer.features;
       if (typeof parsedFeatures === "string") {
         parsedFeatures = parsedFeatures.split("\n").map(f => f.trim()).filter(Boolean);
@@ -299,7 +367,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // --- Memberships API calls ---
+  
   const fetchMemberships = async () => {
     setIsLoadingMemberships(true);
     try {
@@ -357,7 +425,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // --- Gallery API calls ---
+  
   const fetchGallery = async () => {
     setIsLoadingGallery(true);
     try {
@@ -552,7 +620,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // --- Events API calls ---
+  
   const fetchEvents = async () => {
     setIsLoadingEvents(true);
     try {
@@ -599,17 +667,18 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDeleteEvent = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this event?")) return;
+  const handleDeleteEvent = async (id: string, title?: string, type?: string) => {
+    const itemLabel = type === "notification" ? "notification" : "event";
+    if (!confirm(`Are you sure you want to delete this ${itemLabel}${title ? `: "${title}"` : ""}?`)) return;
     try {
       const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to delete event");
+      if (!res.ok) throw new Error(data.error || `Failed to delete ${itemLabel}`);
 
-      addToast("Event deleted successfully!", "success");
+      addToast(`${itemLabel === "notification" ? "Notification" : "Event"} deleted successfully!`, "success");
       fetchEvents();
     } catch (err: any) {
-      addToast(err.message || "Failed to delete event", "error");
+      addToast(err.message || `Failed to delete ${itemLabel}`, "error");
     }
   };
 
@@ -637,7 +706,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // --- Password API calls ---
+  
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -705,7 +774,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Parse features helper (array or newline-separated string)
+  
   const getFeaturesArray = (features: any): string[] => {
     if (Array.isArray(features)) return features;
     if (typeof features === "string") {
@@ -713,7 +782,7 @@ export default function AdminDashboard() {
         const parsed = JSON.parse(features);
         if (Array.isArray(parsed)) return parsed;
       } catch (e) {
-        // Not a JSON string, try newline separation
+        
         return features.split("\n").map(f => f.trim()).filter(Boolean);
       }
     }
@@ -744,9 +813,9 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col md:flex-row">
-      {/* Sidebar Panel */}
+
       <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-zinc-900 bg-zinc-950/60 backdrop-blur-md flex flex-col shrink-0">
-        {/* Brand Header */}
+
         <div className="p-6 border-b border-zinc-900">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-brandRed animate-pulse shadow-[0_0_8px_#D61A1F]" />
@@ -755,7 +824,6 @@ export default function AdminDashboard() {
           <span className="text-[9px] text-zinc-500 font-mono tracking-widest uppercase mt-1 block">ADMIN CONSOLE</span>
         </div>
 
-        {/* Tab Selection */}
         <nav className="flex-1 p-4 flex flex-col gap-1.5">
           <button
             onClick={() => setActiveTab("offers")}
@@ -766,7 +834,7 @@ export default function AdminDashboard() {
             }`}
           >
             <Sparkles size={16} />
-            Offers Carousel
+            Special Offers
           </button>
           <button
             onClick={() => setActiveTab("memberships")}
@@ -777,7 +845,7 @@ export default function AdminDashboard() {
             }`}
           >
             <Dumbbell size={16} />
-            Memberships Grid
+            Memberships
           </button>
           <button
             onClick={() => setActiveTab("gallery")}
@@ -788,7 +856,7 @@ export default function AdminDashboard() {
             }`}
           >
             <ImageIcon size={16} />
-            Gym Gallery
+            Gallery
           </button>
           <button
             onClick={() => setActiveTab("events")}
@@ -799,7 +867,7 @@ export default function AdminDashboard() {
             }`}
           >
             <Calendar size={16} />
-            Events Management
+            Events & Notifications
           </button>
           <button
             onClick={() => setActiveTab("settings")}
@@ -810,11 +878,10 @@ export default function AdminDashboard() {
             }`}
           >
             <Key size={16} />
-            Access Security
+            Change Password
           </button>
         </nav>
 
-        {/* Footer profile & logout */}
         <div className="p-4 border-t border-zinc-900 bg-zinc-950/90 flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-[10px] text-zinc-500 font-mono">Logged in as</span>
@@ -830,9 +897,8 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 p-6 md:p-10 max-h-screen overflow-y-auto relative bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(63,0,2,0.15),rgba(255,255,255,0))]">
-        {/* Global Stackable Notifications */}
+
         <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm pointer-events-none">
           {toasts.map((toast) => (
             <div
@@ -869,7 +935,6 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Page Header */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
             <h1 className="font-heading font-black text-2xl md:text-3xl text-white uppercase tracking-tight animate-fade-in">
@@ -886,7 +951,6 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-          {/* Add buttons depending on tab */}
           {activeTab === "offers" && !newOffer && (
             <button
               onClick={() => {
@@ -929,10 +993,10 @@ export default function AdminDashboard() {
         </header>
 
         <div className="w-full">
-          {/* TAB 1: OFFERS */}
+
           {activeTab === "offers" && (
             <div className="flex flex-col gap-8">
-              {/* Homepage Special Banner Settings */}
+
               <div className="bg-zinc-900/10 border border-zinc-900 rounded-3xl p-6 sm:p-8 backdrop-blur-sm">
                 <h3 className="font-heading font-black text-lg text-white uppercase tracking-tight mb-6 flex items-center gap-3">
                   <Megaphone className="text-brandRed" size={20} />
@@ -1010,7 +1074,6 @@ export default function AdminDashboard() {
                 </form>
               </div>
 
-              {/* Add Card Editor Inline Grid */}
               {(newOffer || offers.length === 0) && (
                 <div className="border border-dashed border-zinc-800 rounded-3xl p-6 bg-zinc-900/10">
                   <h3 className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-6 pl-2 flex items-center gap-2">
@@ -1020,10 +1083,10 @@ export default function AdminDashboard() {
                   
                   {newOffer ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                      {/* Active Card Preview with direct input fields */}
+
                       <div className="relative bg-zinc-900/40 border-2 border-brandRed/40 rounded-3xl p-8 sm:p-10 bg-gradient-to-b from-zinc-900/50 to-transparent backdrop-blur-sm shadow-2xl flex flex-col justify-between min-h-[350px]">
                         <div>
-                          {/* Badge input */}
+
                           <div className="mb-4">
                             <input
                               type="text"
@@ -1034,7 +1097,6 @@ export default function AdminDashboard() {
                             />
                           </div>
 
-                          {/* Title input */}
                           <div className="mb-4">
                             <input
                               type="text"
@@ -1052,7 +1114,6 @@ export default function AdminDashboard() {
                             />
                           </div>
 
-                          {/* Price & Subtitle inputs */}
                           <div className="grid grid-cols-2 gap-3 mb-4">
                             <input
                               type="text"
@@ -1086,7 +1147,6 @@ export default function AdminDashboard() {
 
                           <div className="w-8 h-[2px] bg-brandRed/60 mb-4" />
 
-                          {/* Features Textarea */}
                           <div className="mb-4">
                             <label className="text-[9px] font-mono text-zinc-500 uppercase block mb-1">Features (One per line)</label>
                             <textarea
@@ -1097,7 +1157,6 @@ export default function AdminDashboard() {
                             />
                           </div>
 
-                          {/* WhatsApp template text */}
                           <div className="mb-4">
                             <label className="text-[9px] font-mono text-zinc-500 uppercase block mb-1">WhatsApp Claim Message</label>
                             <input
@@ -1112,7 +1171,6 @@ export default function AdminDashboard() {
                             />
                           </div>
 
-                          {/* Active state */}
                           <div className="flex items-center gap-2 mb-2">
                             <input
                               type="checkbox"
@@ -1127,7 +1185,6 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        {/* Controls */}
                         <div className="flex gap-3 mt-6 pt-4 border-t border-zinc-800/40">
                           <button
                             onClick={() => handleSaveOffer(newOffer, true)}
@@ -1146,7 +1203,6 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {/* Direct explanation of the layout */}
                       <div className="text-zinc-500 text-xs space-y-4 max-w-sm mt-4 md:mt-12 pl-2">
                         <p className="font-mono uppercase text-brandRed font-black">Inline Card Guidelines</p>
                         <ul className="list-disc pl-4 space-y-2">
@@ -1181,7 +1237,6 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* Grid list of existing offers */}
               {isLoadingOffers ? (
                 <div className="py-20 flex justify-center items-center">
                   <Loader2 size={32} className="animate-spin text-brandRed" />
@@ -1202,7 +1257,7 @@ export default function AdminDashboard() {
                             : "border border-zinc-900/80 hover:border-zinc-800 bg-zinc-900/10 bg-gradient-to-b from-zinc-900/30 to-transparent"
                         }`}
                       >
-                        {/* Status ribbon */}
+
                         {!isEditing && (
                           <div className={`absolute top-4 right-4 text-[8px] font-mono font-bold tracking-widest px-2 py-0.5 rounded-md ${
                             offer.active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-zinc-800 text-zinc-500 border border-zinc-700/50"
@@ -1212,7 +1267,7 @@ export default function AdminDashboard() {
                         )}
 
                         {isEditing ? (
-                          /* EDIT MODE */
+                          
                           <div className="space-y-4">
                             <div>
                               <label className="text-[8px] font-mono text-zinc-500 uppercase block mb-1">Badge Ribbon</label>
@@ -1306,7 +1361,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         ) : (
-                          /* VIEW MODE */
+                          
                           <div className="flex flex-col justify-between h-full min-h-[250px]">
                             <div>
                               {offer.badge && (
@@ -1334,7 +1389,6 @@ export default function AdminDashboard() {
                               </ul>
                             </div>
 
-                            {/* Card Footer Control Buttons */}
                             <div className="flex gap-2 pt-4 border-t border-zinc-900 bg-zinc-900/5">
                               <button
                                 onClick={() => setEditingOfferId(offer.id)}
@@ -1361,10 +1415,9 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* TAB 2: MEMBERSHIPS */}
           {activeTab === "memberships" && (
             <div className="flex flex-col gap-8">
-              {/* Add Card Editor Inline Grid */}
+
               {(newMembership || memberships.length === 0) && (
                 <div className="border border-dashed border-zinc-800 rounded-3xl p-6 bg-zinc-900/10">
                   <h3 className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-6 pl-2 flex items-center gap-2">
@@ -1374,10 +1427,10 @@ export default function AdminDashboard() {
 
                   {newMembership ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                      {/* Active Membership Preview Card */}
+
                       <div className="relative bg-zinc-900/40 border-2 border-brandRed/40 rounded-3xl p-8 sm:p-10 bg-gradient-to-b from-zinc-900/50 to-transparent backdrop-blur-sm shadow-2xl flex flex-col justify-between min-h-[350px]">
                         <div>
-                          {/* Badge input */}
+
                           <div className="mb-4">
                             <input
                               type="text"
@@ -1388,7 +1441,6 @@ export default function AdminDashboard() {
                             />
                           </div>
 
-                          {/* Name input */}
                           <div className="mb-4">
                             <input
                               type="text"
@@ -1399,7 +1451,6 @@ export default function AdminDashboard() {
                             />
                           </div>
 
-                          {/* Price & Billing inputs */}
                           <div className="grid grid-cols-2 gap-3 mb-4">
                             <input
                               type="number"
@@ -1419,7 +1470,6 @@ export default function AdminDashboard() {
 
                           <div className="w-8 h-[2px] bg-brandRed/60 mb-4" />
 
-                          {/* Features Textarea */}
                           <div className="mb-4">
                             <label className="text-[9px] font-mono text-zinc-500 uppercase block mb-1">Features (One per line)</label>
                             <textarea
@@ -1430,7 +1480,6 @@ export default function AdminDashboard() {
                             />
                           </div>
 
-                          {/* Popular state */}
                           <div className="flex items-center gap-2 mb-2">
                             <input
                               type="checkbox"
@@ -1445,7 +1494,6 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        {/* Controls */}
                         <div className="flex gap-3 mt-6 pt-4 border-t border-zinc-800/40">
                           <button
                             onClick={() => handleSaveMembership(newMembership, true)}
@@ -1464,7 +1512,6 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {/* Instructions */}
                       <div className="text-zinc-500 text-xs space-y-4 max-w-sm mt-4 md:mt-12 pl-2">
                         <p className="font-mono uppercase text-brandRed font-black">Plan Guidelines</p>
                         <ul className="list-disc pl-4 space-y-2">
@@ -1494,7 +1541,6 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* Grid list of memberships */}
               {isLoadingMemberships ? (
                 <div className="py-20 flex justify-center items-center">
                   <Loader2 size={32} className="animate-spin text-brandRed" />
@@ -1517,7 +1563,7 @@ export default function AdminDashboard() {
                               : "border border-zinc-900/80 hover:border-zinc-800 bg-zinc-900/10 bg-gradient-to-b from-zinc-900/30 to-transparent"
                         }`}
                       >
-                        {/* Highlights badge */}
+
                         {!isEditing && membership.popular === 1 && (
                           <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brandRed text-white text-[8px] font-mono font-bold tracking-widest px-3 py-1 rounded-full uppercase shadow-md shadow-brandRed/20">
                             {membership.badge || "RECOMMENDED"}
@@ -1525,7 +1571,7 @@ export default function AdminDashboard() {
                         )}
 
                         {isEditing ? (
-                          /* EDIT MODE */
+                          
                           <div className="space-y-4">
                             <div>
                               <label className="text-[8px] font-mono text-zinc-500 uppercase block mb-1">Badge Label</label>
@@ -1609,7 +1655,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         ) : (
-                          /* VIEW MODE */
+                          
                           <div className="flex flex-col justify-between h-full min-h-[280px]">
                             <div>
                               <h3 className="font-heading font-black text-lg sm:text-xl text-white uppercase tracking-tight leading-none mb-1">
@@ -1632,7 +1678,6 @@ export default function AdminDashboard() {
                               </ul>
                             </div>
 
-                            {/* Card Footer Control Buttons */}
                             <div className="flex gap-2 pt-4 border-t border-zinc-900/50">
                               <button
                                 onClick={() => setEditingMembershipId(membership.id)}
@@ -1659,13 +1704,12 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* TAB 3: GALLERY */}
           {activeTab === "gallery" && (
             <div className="flex flex-col gap-8">
-              {/* Image upload Form */}
+
               <div className="bg-zinc-900/10 border border-zinc-900 rounded-3xl p-6 md:p-8 backdrop-blur-sm">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* File Dropzone */}
+
                   <div className="lg:col-span-3 flex flex-col gap-4">
                     <label className="text-[10px] font-mono font-black text-zinc-400 uppercase tracking-widest pl-1">
                       Select Image Files (Multiple allowed)
@@ -1688,7 +1732,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Tasks Queue List */}
                   {uploadTasks.length > 0 && (
                     <div className="lg:col-span-3 flex flex-col gap-4">
                       <h4 className="text-[10px] font-mono font-black text-zinc-400 uppercase tracking-widest pl-1">
@@ -1708,7 +1751,7 @@ export default function AdminDashboard() {
                           >
                             <div className="flex gap-4 items-center">
                               <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-zinc-900 shrink-0 border border-zinc-800">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
+
                                 <img src={task.preview} alt="Upload preview" className="w-full h-full object-cover" />
                                 
                                 {(task.status === "compressing" || task.status === "uploading") && (
@@ -1777,7 +1820,6 @@ export default function AdminDashboard() {
                               </div>
                             </div>
 
-                            {/* Processing Progress Bar */}
                             {(task.status === "compressing" || task.status === "uploading") && (
                               <div className="w-full bg-zinc-900 h-0.5 rounded-full overflow-hidden">
                                 <div className="bg-brandRed h-full w-full rounded-full animate-pulse" />
@@ -1808,7 +1850,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Grid of gallery assets */}
               {isLoadingGallery ? (
                 <div className="py-20 flex justify-center items-center">
                   <Loader2 size={32} className="animate-spin text-brandRed" />
@@ -1820,14 +1861,14 @@ export default function AdminDashboard() {
                       key={photo.id}
                       className="group relative aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-900 hover:border-zinc-800 shadow-lg transition-all duration-300"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+
                       <img
                         src={photo.url}
                         alt={photo.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-95"
                       />
                       
-                      {/* Overlay controls */}
+
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-between items-start">
                         <span className="text-[8px] font-mono tracking-widest text-brandRed bg-brandRed/10 border border-brandRed/20 px-2 py-0.5 rounded uppercase font-bold">
                           {photo.category}
@@ -1857,44 +1898,192 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* TAB: EVENTS MANAGEMENT */}
           {activeTab === "events" && (
             <div className="flex flex-col gap-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-zinc-900/20 border border-zinc-900 rounded-3xl p-6">
                 <div>
                   <h3 className="font-heading font-black text-xl text-white uppercase tracking-tight flex items-center gap-3">
                     <Calendar className="text-brandRed" size={22} />
-                    EVENTS & ANNOUNCEMENTS MANAGEMENT
+                    EVENTS & NOTIFICATIONS
                   </h3>
-                  <p className="text-zinc-500 text-xs mt-1">
-                    Publish upcoming gym events, Zumba sessions, workshops, or competitions. Supports both poster visuals and text-only posts.
+                  <p className="text-zinc-500 text-xs mt-1 flex items-center gap-2">
+                    <span>Manage upcoming events, workshops, announcements, and bulletins.</span>
+                    <span className="text-emerald-400 font-mono font-bold bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px]">
+                      📢 {pushStatus?.subscriberCount ?? 0} Push Subscribers
+                    </span>
                   </p>
                 </div>
                 
-                <button
-                  onClick={() => setNewEvent({
-                    id: `event-${Date.now()}`,
-                    title: "",
-                    description: "",
-                    date: "",
-                    time: "",
-                    location: "AN Fitness, Khordha",
-                    posterUrl: "",
-                    category: "Special Event"
-                  })}
-                  className="inline-flex items-center gap-2 bg-brandRed hover:bg-red-700 text-white font-bold text-xs uppercase tracking-widest px-5 py-3 rounded-xl transition-all cursor-pointer shadow-lg shadow-brandRed/20 shrink-0"
-                >
-                  <Plus size={16} />
-                  CREATE NEW EVENT
-                </button>
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                  <button
+                    onClick={() => setNewEvent({
+                      id: `event-${Date.now()}`,
+                      title: "",
+                      description: "",
+                      date: "",
+                      time: "",
+                      location: "AN Fitness, Khordha",
+                      posterUrl: "",
+                      category: "Special Event",
+                      type: "event",
+                      sendPush: true
+                    })}
+                    className="inline-flex items-center gap-2 bg-brandRed hover:bg-red-700 text-white font-bold text-xs uppercase tracking-widest px-4 py-3 rounded-xl transition-all cursor-pointer shadow-lg shadow-brandRed/20"
+                  >
+                    <Plus size={16} />
+                    CREATE EVENT
+                  </button>
+
+                  <button
+                    onClick={() => setNewEvent({
+                      id: `notification-${Date.now()}`,
+                      title: "",
+                      description: "",
+                      date: "",
+                      time: "",
+                      location: "AN Fitness, Khordha",
+                      posterUrl: "",
+                      category: "Bulletin Notice",
+                      type: "notification",
+                      sendPush: true
+                    })}
+                    className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs uppercase tracking-widest px-4 py-3 rounded-xl transition-all cursor-pointer shadow-lg shadow-amber-500/20"
+                  >
+                    <Megaphone size={16} />
+                    CREATE NOTIFICATION
+                  </button>
+
+                  <button
+                    onClick={() => setShowQuickPushForm(!showQuickPushForm)}
+                    className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 font-bold text-xs uppercase tracking-widest px-4 py-3 rounded-xl transition-all cursor-pointer"
+                  >
+                    <Bell size={16} className="text-brandRed" />
+                    {showQuickPushForm ? "HIDE QUICK PUSH" : "⚡ QUICK PUSH"}
+                  </button>
+                </div>
               </div>
 
-              {/* Add / Edit Event Form Modal Card */}
+              {showQuickPushForm && (
+                <div className="bg-zinc-900/40 border border-amber-500/30 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 backdrop-blur-md animate-fadeIn">
+                  <div className="border-b border-zinc-800 pb-4 flex items-center justify-between">
+                    <h4 className="font-heading font-black text-base uppercase tracking-wider text-white flex items-center gap-2">
+                      <Send size={16} className="text-amber-500" />
+                      QUICK ANNOUNCEMENT & INSTANT PUSH BROADCAST
+                    </h4>
+                    <button
+                      onClick={() => setShowQuickPushForm(false)}
+                      className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:text-white text-zinc-500 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSendManualPush} className="flex flex-col gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">NOTIFICATION / EVENT TITLE *</label>
+                        <input
+                          type="text"
+                          value={pushTitle}
+                          onChange={(e) => setPushTitle(e.target.value)}
+                          placeholder="e.g. 📢 SPECIAL ANNOUNCEMENT: GYM TIMINGS UPDATE"
+                          className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-4 py-3 rounded-xl text-xs text-white outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">CATEGORY TYPE</label>
+                          <select
+                            value={pushType}
+                            onChange={(e) => setPushType(e.target.value as "event" | "notification")}
+                            className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-3 py-3 rounded-xl text-xs text-white outline-none cursor-pointer"
+                          >
+                            <option value="notification">📢 Announcement</option>
+                            <option value="event">🏋️ Event / Workshop</option>
+                          </select>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">TARGET LINK</label>
+                          <input
+                            type="text"
+                            value={pushUrl}
+                            onChange={(e) => setPushUrl(e.target.value)}
+                            placeholder="/events"
+                            className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-3 py-3 rounded-xl text-xs text-white outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">MESSAGE BODY & BULLETIN DETAILS *</label>
+                      <textarea
+                        rows={3}
+                        value={pushMessage}
+                        onChange={(e) => setPushMessage(e.target.value)}
+                        placeholder="Write your announcement message body here..."
+                        className="bg-zinc-950 border border-zinc-800 focus:border-brandRed p-4 rounded-xl text-xs text-white outline-none resize-none"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">ATTACHMENT IMAGE / POSTER URL (OPTIONAL)</label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={pushImage}
+                          onChange={(e) => setPushImage(e.target.value)}
+                          placeholder="Image URL or upload poster image..."
+                          className="flex-1 bg-zinc-950 border border-zinc-800 focus:border-brandRed px-4 py-3 rounded-xl text-xs text-white outline-none"
+                        />
+                        <label className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-3 rounded-xl text-xs font-mono font-bold cursor-pointer transition-colors shrink-0 flex items-center gap-2">
+                          {isUploadingPoster ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                          UPLOAD
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                handlePosterFileUpload(file, (url) => setPushImage(url));
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isBroadcasting}
+                      className="mt-2 self-end inline-flex items-center gap-2 bg-brandRed hover:bg-brandRed-light disabled:opacity-60 text-white font-bold text-xs uppercase tracking-widest px-8 py-4 rounded-xl transition-all cursor-pointer shadow-lg shadow-brandRed/20"
+                    >
+                      {isBroadcasting ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          PUBLISHING & SENDING PUSH ALERTS...
+                        </>
+                      ) : (
+                        <>
+                          <Send size={16} />
+                          PUBLISH POST & SEND PUSH ALERTS NOW
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
+
               {(newEvent || editingEventId) && (
                 <div className="bg-zinc-900/40 border border-brandRed/30 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 backdrop-blur-md animate-fadeIn">
                   <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
                     <h4 className="font-heading font-black text-base uppercase tracking-wider text-white">
-                      {newEvent ? "CREATE NEW EVENT" : "EDIT EVENT DETAILS"}
+                      {newEvent
+                        ? newEvent.type === "notification" ? "CREATE NEW NOTIFICATION" : "CREATE NEW EVENT"
+                        : "EDIT DETAILS"}
                     </h4>
                     <button
                       onClick={() => { setNewEvent(null); setEditingEventId(null); }}
@@ -1911,8 +2100,43 @@ export default function AdminDashboard() {
                     return (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="flex flex-col gap-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">PUBLISH TYPE *</label>
+                              <select
+                                value={activeEvent.type || "event"}
+                                onChange={(e) => {
+                                  const val = e.target.value as "event" | "notification";
+                                  if (newEvent) setNewEvent({ ...newEvent, type: val });
+                                  else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, type: val } : ev));
+                                }}
+                                className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-3 py-3 rounded-xl text-xs text-white outline-none cursor-pointer"
+                              >
+                                <option value="event">🏋️ EVENT / WORKSHOP</option>
+                                <option value="notification">📢 NOTIFICATION / BULLETIN</option>
+                              </select>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">PUSH ALERT</label>
+                              <label className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-3 rounded-xl cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={activeEvent.sendPush ?? true}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    if (newEvent) setNewEvent({ ...newEvent, sendPush: checked });
+                                    else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, sendPush: checked } : ev));
+                                  }}
+                                  className="w-4 h-4 accent-brandRed cursor-pointer"
+                                />
+                                <span className="text-[11px] font-mono text-zinc-300">PUSH ALERT</span>
+                              </label>
+                            </div>
+                          </div>
+
                           <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">EVENT TITLE *</label>
+                            <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">TITLE *</label>
                             <input
                               type="text"
                               value={activeEvent.title}
@@ -1937,12 +2161,12 @@ export default function AdminDashboard() {
                                   if (newEvent) setNewEvent({ ...newEvent, category: val });
                                   else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, category: val } : ev));
                                 }}
-                                placeholder="Zumba / Workshop / Offer"
+                                placeholder="Zumba / Workshop / Notice"
                                 className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-4 py-3 rounded-xl text-xs text-white outline-none"
                               />
                             </div>
                             <div className="flex flex-col gap-1.5">
-                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">DATE</label>
+                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">DATE (OPTIONAL)</label>
                               <input
                                 type="text"
                                 value={activeEvent.date}
@@ -1959,7 +2183,7 @@ export default function AdminDashboard() {
 
                           <div className="grid grid-cols-2 gap-3">
                             <div className="flex flex-col gap-1.5">
-                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">TIME</label>
+                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">TIME (OPTIONAL)</label>
                               <input
                                 type="text"
                                 value={activeEvent.time}
@@ -1973,7 +2197,7 @@ export default function AdminDashboard() {
                               />
                             </div>
                             <div className="flex flex-col gap-1.5">
-                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">LOCATION</label>
+                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">LOCATION (OPTIONAL)</label>
                               <input
                                 type="text"
                                 value={activeEvent.location}
@@ -2035,7 +2259,7 @@ export default function AdminDashboard() {
                                 if (newEvent) setNewEvent({ ...newEvent, description: val });
                                 else setEvents(events.map(ev => ev.id === editingEventId ? { ...ev, description: val } : ev));
                               }}
-                              placeholder="Write event description, agenda, special guidelines, or registration info..."
+                              placeholder="Write description, agenda, guidelines, or notice details..."
                               className="w-full h-full bg-zinc-950 border border-zinc-800 focus:border-brandRed p-4 rounded-xl text-xs text-white outline-none resize-none"
                             />
                           </div>
@@ -2043,16 +2267,16 @@ export default function AdminDashboard() {
                           <div className="flex justify-end gap-3 pt-2">
                             <button
                               onClick={() => { setNewEvent(null); setEditingEventId(null); }}
-                              className="px-5 py-3 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase transition-colors"
+                              className="px-5 py-3 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase transition-colors cursor-pointer"
                             >
                               CANCEL
                             </button>
                             <button
                               onClick={() => handleSaveEvent(activeEvent, !!newEvent)}
-                              className="px-6 py-3 rounded-xl bg-brandRed hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
+                              className="px-6 py-3 rounded-xl bg-brandRed hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 cursor-pointer"
                             >
                               <Save size={14} />
-                              SAVE EVENT
+                              SAVE & PUBLISH
                             </button>
                           </div>
                         </div>
@@ -2062,7 +2286,33 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* Events List */}
+              <div className="flex items-center gap-2 border-b border-zinc-900 pb-3">
+                <button
+                  onClick={() => setAdminEventsFilter("all")}
+                  className={`px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                    adminEventsFilter === "all" ? "bg-zinc-800 text-white border border-zinc-700" : "text-zinc-500 hover:text-white"
+                  }`}
+                >
+                  ALL ITEMS ({events.length})
+                </button>
+                <button
+                  onClick={() => setAdminEventsFilter("event")}
+                  className={`px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                    adminEventsFilter === "event" ? "bg-zinc-800 text-white border border-zinc-700" : "text-zinc-500 hover:text-white"
+                  }`}
+                >
+                  EVENTS ONLY ({events.filter(e => e.type !== "notification").length})
+                </button>
+                <button
+                  onClick={() => setAdminEventsFilter("notification")}
+                  className={`px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                    adminEventsFilter === "notification" ? "bg-zinc-800 text-white border border-zinc-700" : "text-zinc-500 hover:text-white"
+                  }`}
+                >
+                  NOTIFICATIONS ONLY ({events.filter(e => e.type === "notification").length})
+                </button>
+              </div>
+
               <div className="bg-zinc-900/10 border border-zinc-900 rounded-3xl p-6">
                 {isLoadingEvents ? (
                   <div className="py-16 flex items-center justify-center">
@@ -2070,73 +2320,96 @@ export default function AdminDashboard() {
                   </div>
                 ) : events.length === 0 ? (
                   <div className="py-16 text-center text-zinc-600 text-xs font-mono uppercase tracking-widest">
-                    No events published yet. Click "CREATE NEW EVENT" to add one.
+                    No items published yet. Click "CREATE EVENT" or "CREATE NOTIFICATION" to publish.
                   </div>
                 ) : (
                   <div className="flex flex-col gap-4">
-                    {events.map((ev) => (
-                      <div
-                        key={ev.id}
-                        className="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row gap-5 justify-between items-start md:items-center hover:border-zinc-700 transition-all"
-                      >
-                        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center flex-1">
-                          {ev.posterUrl ? (
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-zinc-900 shrink-0 border border-zinc-800">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={ev.posterUrl} alt={ev.title} className="w-full h-full object-cover" />
-                            </div>
-                          ) : (
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center shrink-0 p-2 text-center">
-                              <FileText size={20} className="text-zinc-600 mb-1" />
-                              <span className="text-[8px] font-mono text-zinc-600 uppercase">Text Only</span>
-                            </div>
-                          )}
+                    {events
+                      .filter(ev => {
+                        if (adminEventsFilter === "event") return ev.type !== "notification";
+                        if (adminEventsFilter === "notification") return ev.type === "notification";
+                        return true;
+                      })
+                      .map((ev) => {
+                        const isNotif = ev.type === "notification";
 
-                          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-[8px] font-mono font-bold tracking-widest text-brandRed bg-brandRed/10 border border-brandRed/20 px-2 py-0.5 rounded uppercase">
-                                {ev.category || "General"}
-                              </span>
-                              {ev.date && (
-                                <span className="text-[9px] font-mono text-zinc-400">
-                                  {ev.date} {ev.time && `• ${ev.time}`}
-                                </span>
+                        return (
+                          <div
+                            key={ev.id}
+                            className={`bg-zinc-950 border rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row gap-5 justify-between items-start md:items-center transition-all ${
+                              isNotif ? "border-amber-500/30 hover:border-amber-500/50" : "border-zinc-800/80 hover:border-zinc-700"
+                            }`}
+                          >
+                            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center flex-1">
+                              {ev.posterUrl ? (
+                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-zinc-900 shrink-0 border border-zinc-800">
+
+                                  <img src={ev.posterUrl} alt={ev.title} className="w-full h-full object-cover" />
+                                </div>
+                              ) : (
+                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center shrink-0 p-2 text-center">
+                                  {isNotif ? <Megaphone size={20} className="text-amber-500 mb-1" /> : <FileText size={20} className="text-zinc-600 mb-1" />}
+                                  <span className="text-[8px] font-mono text-zinc-600 uppercase">{isNotif ? "Notice" : "Text Only"}</span>
+                                </div>
                               )}
-                            </div>
-                            <h4 className="font-heading font-black text-sm text-white uppercase truncate">
-                              {ev.title}
-                            </h4>
-                            <p className="text-zinc-400 text-xs line-clamp-2 font-light">
-                              {ev.description}
-                            </p>
-                          </div>
-                        </div>
 
-                        <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                          <button
-                            onClick={() => setEditingEventId(ev.id)}
-                            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                            title="Edit Event"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteEvent(ev.id)}
-                            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-brandRed hover:bg-brandRed text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                            title="Delete Event"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                              <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span
+                                    className={`text-[8px] font-mono font-bold tracking-widest border px-2 py-0.5 rounded uppercase flex items-center gap-1 ${
+                                      isNotif
+                                        ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                                        : "bg-brandRed/10 border-brandRed/20 text-brandRed"
+                                    }`}
+                                  >
+                                    {isNotif ? "📢 NOTIFICATION" : "🏋️ EVENT"}
+                                  </span>
+
+                                  <span className="text-[8px] font-mono font-bold tracking-widest text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded uppercase">
+                                    {ev.category || "General"}
+                                  </span>
+
+                                  {ev.date && (
+                                    <span className="text-[9px] font-mono text-zinc-400">
+                                      {ev.date} {ev.time && `• ${ev.time}`}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <h4 className="font-heading font-black text-sm text-white uppercase truncate">
+                                  {ev.title}
+                                </h4>
+                                <p className="text-zinc-400 text-xs line-clamp-2 font-light">
+                                  {ev.description}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                              <button
+                                onClick={() => setEditingEventId(ev.id)}
+                                className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                                title={`Edit ${isNotif ? "Notification" : "Event"}`}
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteEvent(ev.id, ev.title, ev.type)}
+                                className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-brandRed hover:bg-brandRed text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                                title={`Delete ${isNotif ? "Notification" : "Event"}`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* TAB 4: SETTINGS */}
           {activeTab === "settings" && (
             <div className="max-w-xl bg-zinc-900/10 border border-zinc-900 rounded-3xl p-8 backdrop-blur-sm">
               <h3 className="font-heading font-black text-lg text-white uppercase tracking-tight mb-6 flex items-center gap-3">
