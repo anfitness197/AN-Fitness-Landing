@@ -153,6 +153,7 @@ async function createVapidHeaders(endpoint: string, vapid: VapidKeys) {
 
   return {
     Authorization: `vapid t=${jwt}, k=${vapid.publicKey}`,
+    jwt,
   };
 }
 
@@ -176,7 +177,6 @@ async function hkdf(
   return new Uint8Array(derived);
 }
 
-// RFC 8291 aes128gcm Web Push Payload Encryption
 async function encryptPayload(
   payloadText: string,
   subKeys: { p256dh: string; auth: string }
@@ -184,7 +184,7 @@ async function encryptPayload(
   const clientPublicKeyBytes = urlBase64ToUint8Array(subKeys.p256dh);
   const clientAuthBytes = urlBase64ToUint8Array(subKeys.auth);
 
-  // 1. Generate local server P-256 ECDH key pair
+  
   const localKeyPair = await crypto.subtle.generateKey(
     { name: "ECDH", namedCurve: "P-256" },
     true,
@@ -195,7 +195,7 @@ async function encryptPayload(
     await crypto.subtle.exportKey("raw", localKeyPair.publicKey)
   );
 
-  // 2. Import client public key
+  
   const clientPublicKey = await crypto.subtle.importKey(
     "raw",
     clientPublicKeyBytes as unknown as BufferSource,
@@ -204,7 +204,7 @@ async function encryptPayload(
     []
   );
 
-  // 3. Perform ECDH secret derivation
+  
   const ecdhSecret = new Uint8Array(
     await crypto.subtle.deriveBits(
       { name: "ECDH", public: clientPublicKey },
@@ -213,12 +213,11 @@ async function encryptPayload(
     )
   );
 
-  // 4. Generate random 16-byte salt
+  
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
-  // 5. Derive PRK using HKDF
-  // RFC 8291 info = "WebPush: info\0" + clientPublicKeyBytes + serverPublicKeyBytes
-  const infoPrefix = new TextEncoder().encode("WebPush: info\0"); // 14 bytes
+  
+  const infoPrefix = new TextEncoder().encode("WebPush: info\0");
   const infoWebPush = new Uint8Array(infoPrefix.length + clientPublicKeyBytes.length + localPublicKeyRaw.length);
   infoWebPush.set(infoPrefix, 0);
   infoWebPush.set(clientPublicKeyBytes, infoPrefix.length);
@@ -226,20 +225,20 @@ async function encryptPayload(
 
   const prk = await hkdf(clientAuthBytes, ecdhSecret, infoWebPush, 32);
 
-  // 6. Derive CEK and Nonce
+  
   const infoCEK = new TextEncoder().encode("Content-Encoding: aes128gcm\0");
   const infoNonce = new TextEncoder().encode("Content-Encoding: nonce\0");
 
   const cek = await hkdf(salt, prk, infoCEK, 16);
   const nonce = await hkdf(salt, prk, infoNonce, 12);
 
-  // 7. Format plaintext with delimiter 0x02
+  
   const payloadBytes = new TextEncoder().encode(payloadText);
   const recordBytes = new Uint8Array(payloadBytes.length + 1);
   recordBytes.set(payloadBytes, 0);
   recordBytes[payloadBytes.length] = 0x02;
 
-  // 8. AES-128-GCM encryption
+  
   const aesKey = await crypto.subtle.importKey("raw", cek as unknown as BufferSource, { name: "AES-GCM" }, false, ["encrypt"]);
   const ciphertextBuffer = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: nonce as unknown as BufferSource, tagLength: 128 },
@@ -248,7 +247,7 @@ async function encryptPayload(
   );
   const ciphertext = new Uint8Array(ciphertextBuffer);
 
-  // 9. Frame aes128gcm header: salt (16) + record_size 4096 (4) + key_id_len 65 (1) + server_public_key (65)
+  
   const recordSize = 4096;
   const header = new Uint8Array(16 + 4 + 1 + 65);
   header.set(salt, 0);
@@ -275,10 +274,10 @@ export async function sendWebPushNotification(
     const vapidHeaders = await createVapidHeaders(subscription.endpoint, vapid);
     const body = await encryptPayload(JSON.stringify(payload), subscription.keys);
 
-    const res = await fetch(subscription.endpoint, {
+    let res = await fetch(subscription.endpoint, {
       method: "POST",
       headers: {
-        ...vapidHeaders,
+        Authorization: vapidHeaders.Authorization,
         "Crypto-Key": `p256ecdsa=${vapid.publicKey}`,
         "Content-Type": "application/octet-stream",
         "Content-Encoding": "aes128gcm",
@@ -292,11 +291,31 @@ export async function sendWebPushNotification(
       return { success: true, statusCode: res.status };
     }
 
+    
+    if (res.status === 400 || res.status === 401) {
+      res = await fetch(subscription.endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `WebPush ${vapidHeaders.jwt}`,
+          "Crypto-Key": `p256ecdsa=${vapid.publicKey}`,
+          "Content-Type": "application/octet-stream",
+          "Content-Encoding": "aes128gcm",
+          "TTL": "86400",
+          "Urgency": "high",
+        },
+        body: body as unknown as BodyInit,
+      });
+
+      if (res.status === 201 || res.status === 200 || res.status === 202) {
+        return { success: true, statusCode: res.status };
+      }
+    }
+
     const errText = await res.text().catch(() => "");
     return {
       success: false,
       statusCode: res.status,
-      error: `Push service returned ${res.status}: ${errText}`,
+      error: `Push service endpoint (${new URL(subscription.endpoint).host}) returned ${res.status}: ${errText || "Unauthorized or Bad Request"}`,
     };
   } catch (err: any) {
     return {

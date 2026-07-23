@@ -58,6 +58,15 @@ export default function EventsList() {
         } catch (e) {
           console.error("Service worker push check error:", e);
         }
+
+        navigator.serviceWorker.addEventListener("message", (event) => {
+          if (event.data?.type === "PUSH_NOTIFICATION_RECEIVED") {
+            const notif = event.data.notification;
+            const notifTitle = notif?.title || "AN Fitness Notification";
+            const notifBody = notif?.body || "New update received!";
+            setPushStatusMsg(`🔔 ${notifTitle}: ${notifBody}`);
+          }
+        });
       }
     }
 
@@ -77,10 +86,10 @@ export default function EventsList() {
     try {
       const reg = await navigator.serviceWorker.register("/sw.js");
       await navigator.serviceWorker.ready;
-      const existingSub = await reg.pushManager.getSubscription();
 
-      // UNSUBSCRIBE / DISABLE
-      if (isSubscribed || existingSub) {
+      
+      if (isSubscribed) {
+        const existingSub = await reg.pushManager.getSubscription();
         if (existingSub) {
           await existingSub.unsubscribe().catch(() => {});
           await fetch("/api/push/subscribe", {
@@ -94,9 +103,9 @@ export default function EventsList() {
         return;
       }
 
-      // SUBSCRIBE / ENABLE - Request permission immediately during user click gesture
+      
       if (Notification.permission === "denied") {
-        setPushStatusMsg("Notifications are blocked in browser settings. Please click the lock/tune icon near the URL bar to allow Notifications.");
+        setPushStatusMsg("Notifications are blocked in browser settings. Click the lock icon in the address bar to allow Notifications.");
         return;
       }
 
@@ -106,16 +115,18 @@ export default function EventsList() {
         return;
       }
 
-      // Fetch VAPID key from API
       const keyRes = await fetch("/api/push/subscribe");
       const keyData = await keyRes.json();
-
       if (!keyRes.ok || !keyData.publicKey) {
         throw new Error(keyData.error || "Failed to retrieve VAPID public key");
       }
 
-      const applicationServerKey = urlBase64ToUint8Array(keyData.publicKey);
+      const existingSub = await reg.pushManager.getSubscription();
+      if (existingSub) {
+        await existingSub.unsubscribe().catch(() => {});
+      }
 
+      const applicationServerKey = urlBase64ToUint8Array(keyData.publicKey);
       const newSub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey as unknown as BufferSource,
@@ -133,7 +144,7 @@ export default function EventsList() {
       }
 
       setIsSubscribed(true);
-      setPushStatusMsg("Subscribed successfully! Welcome push notification sent.");
+      setPushStatusMsg("Push alerts enabled successfully!");
     } catch (err: any) {
       console.error("Push subscription error:", err);
       setPushStatusMsg(err.message || "Failed to update notification subscription.");
@@ -163,7 +174,7 @@ export default function EventsList() {
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
-      {/* Push Alerts Subscription Banner */}
+
       <div className="bg-gradient-to-r from-zinc-900/80 via-zinc-900/40 to-zinc-900/80 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg relative overflow-hidden">
         <div className="flex items-start sm:items-center gap-3.5 z-10">
           <div className={`p-3 rounded-xl border ${isSubscribed ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-brandRed/10 border-brandRed/20 text-brandRed"} shrink-0`}>
@@ -219,7 +230,6 @@ export default function EventsList() {
         </button>
       </div>
 
-      {/* Bulletin Filter Tabs */}
       <div className="flex items-center gap-2 border-b border-zinc-800 pb-3 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab("all")}
@@ -267,7 +277,6 @@ export default function EventsList() {
         </button>
       </div>
 
-      {/* Feed Grid */}
       {filteredItems.length === 0 ? (
         <div className="py-20 text-center bg-zinc-900/20 border border-zinc-800/60 rounded-3xl p-8 flex flex-col items-center justify-center gap-3">
           <FileText size={40} className="text-zinc-700" />
@@ -289,13 +298,12 @@ export default function EventsList() {
                 }`}
               >
                 <div>
-                  {/* Poster image thumbnail */}
                   {item.posterUrl && (
                     <div
                       onClick={() => setActivePoster({ url: item.posterUrl!, title: item.title })}
                       className="relative w-full h-48 sm:h-56 overflow-hidden bg-zinc-950 cursor-pointer group/poster"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+
                       <img
                         src={item.posterUrl}
                         alt={item.title}
@@ -361,7 +369,6 @@ export default function EventsList() {
         </div>
       )}
 
-      {/* Lightbox Poster View */}
       {activePoster && (
         <div
           onClick={() => setActivePoster(null)}
@@ -374,7 +381,7 @@ export default function EventsList() {
             >
               <X size={20} />
             </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+
             <img
               src={activePoster.url}
               alt={activePoster.title}

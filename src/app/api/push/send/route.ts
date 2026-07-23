@@ -127,15 +127,22 @@ export async function POST(request: Request) {
     const result = await broadcastPushNotification(db, {
       title: itemType === "notification" ? `📢 ${cleanTitle}` : `🏋️ ${cleanTitle}`,
       body: cleanBody.length > 120 ? `${cleanBody.substring(0, 117)}...` : cleanBody,
-      icon: "/icon-192.png",
+      icon: "/assets/logos/favicon.svg",
       image: (image || "").toString().trim() || undefined,
       url: (url || "/events").toString().trim(),
       type: itemType,
     });
 
+    let msg = `Post published & push broadcast sent to ${result.sent} active subscriber(s)!`;
+    if (result.total === 0) {
+      msg = `Post published to Bulletin Board! (Note: 0 devices are subscribed to push alerts yet. Open /events on your device & click 'ENABLE PUSH ALERTS' to subscribe).`;
+    } else if (result.sent === 0 && result.errors?.length) {
+      msg = `Post published to Bulletin Board, but push delivery failed (${result.errors[0]}).`;
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Unified Publish Complete: Post created & broadcasted to ${result.sent} of ${result.total} subscribers in one go!`,
+      message: msg,
       stats: result,
     });
   } catch (err: any) {

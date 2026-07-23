@@ -49,24 +49,29 @@ export async function POST(request: Request) {
 
     
     const vapid = await getOrInitVapidKeys(db);
-    sendWebPushNotification(
+    const welcomeResult = await sendWebPushNotification(
       { endpoint, keys: { p256dh: keys.p256dh, auth: keys.auth } },
       {
         title: "🎉 Welcome to AN Fitness Alerts!",
         body: "You have successfully subscribed to push notifications. Stay tuned for exciting gym events, schedules & announcements!",
-        icon: "/images/logo.png",
+        icon: "/assets/logos/favicon.svg",
         url: "/events",
         type: "notification",
         tag: "welcome-push-alert",
       },
       vapid
-    ).catch((err) => {
-      console.error("Welcome push notification error:", err);
-    });
+    );
+
+    if (!welcomeResult.success) {
+      console.error("Welcome push notification failed:", welcomeResult.error);
+    }
 
     return NextResponse.json({
       success: true,
-      message: "Subscribed to push notifications successfully! Welcome notification sent.",
+      message: welcomeResult.success
+        ? "Subscribed to push notifications successfully! Welcome notification sent."
+        : `Subscribed successfully, but welcome push service returned: ${welcomeResult.error || "Delivery pending"}`,
+      welcomeResult,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to save subscription" }, { status: 500 });

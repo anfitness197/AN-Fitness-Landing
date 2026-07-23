@@ -24,12 +24,20 @@ self.addEventListener("push", (event) => {
     }
   }
 
+  
+  self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+    for (const client of clientList) {
+      client.postMessage({ type: "PUSH_NOTIFICATION_RECEIVED", notification: data });
+    }
+  });
+
+  
   const options = {
     body: data.body,
     icon: data.icon || "/assets/logos/favicon.svg",
     badge: data.badge || "/assets/logos/favicon.svg",
     image: data.image || undefined,
-    tag: data.tag || "an-fitness-notification",
+    tag: data.tag || `an-fitness-${Date.now()}`,
     data: {
       url: data.url || "/events",
     },
