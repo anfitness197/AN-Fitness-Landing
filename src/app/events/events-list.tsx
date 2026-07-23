@@ -84,21 +84,21 @@ export default function EventsList() {
     checkPushStatus();
   }, []);
 
+  const [showPermissionDialog, setShowPermissionDialog] = useState(false);
+
   const handleTogglePush = async () => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
       setPushStatusMsg("Push notifications are not supported in this browser.");
       return;
     }
 
-    setSubscribing(true);
-    setPushStatusMsg(null);
-
-    try {
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
-
-      
-      if (isSubscribed) {
+    // Unsubscribe flow
+    if (isSubscribed) {
+      setSubscribing(true);
+      setPushStatusMsg(null);
+      try {
+        const reg = await navigator.serviceWorker.register("/sw.js");
+        await navigator.serviceWorker.ready;
         const existingSub = await reg.pushManager.getSubscription();
         if (existingSub) {
           await existingSub.unsubscribe().catch(() => {});
@@ -110,18 +110,37 @@ export default function EventsList() {
         }
         setIsSubscribed(false);
         setPushStatusMsg("Push notifications disabled.");
-        return;
+      } catch (err: any) {
+        console.error("Push unsubscribe error:", err);
+        setPushStatusMsg(err.message || "Failed to unsubscribe.");
+      } finally {
+        setSubscribing(false);
       }
+      return;
+    }
 
-      
-      if (Notification.permission === "denied") {
-        setPushStatusMsg("Notifications are blocked in browser settings. Click the lock icon in the address bar to allow Notifications.");
-        return;
-      }
+    // If already denied, show message
+    if (typeof Notification !== "undefined" && Notification.permission === "denied") {
+      setPushStatusMsg("Notifications are blocked in browser settings. Click the lock icon in the address bar to allow Notifications.");
+      return;
+    }
+
+    // Show the custom permission dialog before triggering the browser prompt
+    setShowPermissionDialog(true);
+  };
+
+  const handlePermissionAccept = async () => {
+    setShowPermissionDialog(false);
+    setSubscribing(true);
+    setPushStatusMsg(null);
+
+    try {
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
 
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        setPushStatusMsg("Notification permission was not granted.");
+        setPushStatusMsg("Notification permission was not granted. You can change this in browser settings.");
         return;
       }
 
@@ -161,6 +180,11 @@ export default function EventsList() {
     } finally {
       setSubscribing(false);
     }
+  };
+
+  const handlePermissionDeny = () => {
+    setShowPermissionDialog(false);
+    setPushStatusMsg("You can enable push alerts anytime by tapping the button above.");
   };
 
   const eventsCount = items.filter((i) => i.type !== "notification").length;
@@ -400,6 +424,50 @@ export default function EventsList() {
             <span className="font-heading uppercase font-bold text-sm text-zinc-300 tracking-wider">
               {activePoster.title}
             </span>
+          </div>
+        </div>
+      )}
+      {showPermissionDialog && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn"
+          onClick={handlePermissionDeny}
+        >
+          <div
+            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl flex flex-col items-center gap-5 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 rounded-2xl bg-brandRed/10 border border-brandRed/20 flex items-center justify-center">
+              <Bell size={32} className="text-brandRed" />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <h3 className="font-heading uppercase font-black text-lg text-white tracking-wide">
+                Enable Push Notifications?
+              </h3>
+              <p className="text-zinc-400 text-sm leading-relaxed font-light">
+                Get instant alerts for new events, class schedules, special offers, and important gym announcements directly on your device.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2.5 w-full mt-1">
+              <button
+                onClick={handlePermissionAccept}
+                className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brandRed hover:bg-brandRed-light text-white font-mono text-xs uppercase font-bold tracking-wider transition-all shadow-lg shadow-brandRed/20 cursor-pointer"
+              >
+                <BellRing size={16} />
+                Allow Notifications
+              </button>
+              <button
+                onClick={handlePermissionDeny}
+                className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs uppercase font-bold tracking-wider transition-all border border-zinc-700 cursor-pointer"
+              >
+                Not Now
+              </button>
+            </div>
+
+            <p className="text-zinc-600 text-[10px] font-mono uppercase tracking-wider">
+              You can change this anytime in settings
+            </p>
           </div>
         </div>
       )}
