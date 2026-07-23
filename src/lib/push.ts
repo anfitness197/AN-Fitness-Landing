@@ -24,8 +24,8 @@ export function urlBase64ToUint8Array(base64Url: string): Uint8Array {
 }
 
 export interface VapidKeys {
-  publicKey: string; 
-  privateKey: string; 
+  publicKey: string;
+  privateKey: string;
   subject: string;
   x: string;
   y: string;
@@ -77,7 +77,6 @@ export async function generateVapidKeyPair(subject: string = "mailto:admin@anfit
 export async function getOrInitVapidKeys(db?: D1Database): Promise<VapidKeys> {
   const database = db || getDB();
 
-  
   await database
     .exec(`
       CREATE TABLE IF NOT EXISTS vapid_keys (
@@ -95,7 +94,6 @@ export async function getOrInitVapidKeys(db?: D1Database): Promise<VapidKeys> {
       .first();
 
     if (row && row.public_key && row.private_key) {
-      
       const pubBytes = urlBase64ToUint8Array(row.public_key);
       const pubKey = await crypto.subtle.importKey(
         "raw",
@@ -118,7 +116,6 @@ export async function getOrInitVapidKeys(db?: D1Database): Promise<VapidKeys> {
     console.error("VAPID DB lookup error, generating key pair:", e);
   }
 
-  
   const newKeys = await generateVapidKeyPair("mailto:admin@anfitness.in");
   try {
     await database
@@ -179,6 +176,7 @@ async function hkdf(
   return new Uint8Array(derived);
 }
 
+// RFC 8291 aes128gcm Web Push Payload Encryption
 async function encryptPayload(
   payloadText: string,
   subKeys: { p256dh: string; auth: string }
@@ -186,7 +184,7 @@ async function encryptPayload(
   const clientPublicKeyBytes = urlBase64ToUint8Array(subKeys.p256dh);
   const clientAuthBytes = urlBase64ToUint8Array(subKeys.auth);
 
-  
+  // 1. Generate local server P-256 ECDH key pair
   const localKeyPair = await crypto.subtle.generateKey(
     { name: "ECDH", namedCurve: "P-256" },
     true,
@@ -197,7 +195,7 @@ async function encryptPayload(
     await crypto.subtle.exportKey("raw", localKeyPair.publicKey)
   );
 
-  
+  // 2. Import client public key
   const clientPublicKey = await crypto.subtle.importKey(
     "raw",
     clientPublicKeyBytes as unknown as BufferSource,
@@ -206,7 +204,7 @@ async function encryptPayload(
     []
   );
 
-  
+  // 3. Perform ECDH secret derivation
   const ecdhSecret = new Uint8Array(
     await crypto.subtle.deriveBits(
       { name: "ECDH", public: clientPublicKey },
@@ -215,36 +213,33 @@ async function encryptPayload(
     )
   );
 
-  
+  // 4. Generate random 16-byte salt
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
-  
-  
-  const infoWebPush = new Uint8Array(13 + 65 + 65);
-  infoWebPush.set(new TextEncoder().encode("WebPush: info\0"), 0);
-  infoWebPush.set(clientPublicKeyBytes, 13);
-  infoWebPush.set(localPublicKeyRaw, 13 + 65);
+  // 5. Derive PRK using HKDF
+  // RFC 8291 info = "WebPush: info\0" + clientPublicKeyBytes + serverPublicKeyBytes
+  const infoPrefix = new TextEncoder().encode("WebPush: info\0"); // 14 bytes
+  const infoWebPush = new Uint8Array(infoPrefix.length + clientPublicKeyBytes.length + localPublicKeyRaw.length);
+  infoWebPush.set(infoPrefix, 0);
+  infoWebPush.set(clientPublicKeyBytes, infoPrefix.length);
+  infoWebPush.set(localPublicKeyRaw, infoPrefix.length + clientPublicKeyBytes.length);
 
   const prk = await hkdf(clientAuthBytes, ecdhSecret, infoWebPush, 32);
 
-  
-  const infoCEK = new Uint8Array(
-    new TextEncoder().encode("Content-Encoding: aes128gcm\0")
-  );
-  const infoNonce = new Uint8Array(
-    new TextEncoder().encode("Content-Encoding: nonce\0")
-  );
+  // 6. Derive CEK and Nonce
+  const infoCEK = new TextEncoder().encode("Content-Encoding: aes128gcm\0");
+  const infoNonce = new TextEncoder().encode("Content-Encoding: nonce\0");
 
   const cek = await hkdf(salt, prk, infoCEK, 16);
   const nonce = await hkdf(salt, prk, infoNonce, 12);
 
-  
+  // 7. Format plaintext with delimiter 0x02
   const payloadBytes = new TextEncoder().encode(payloadText);
   const recordBytes = new Uint8Array(payloadBytes.length + 1);
   recordBytes.set(payloadBytes, 0);
-  recordBytes[payloadBytes.length] = 0x02; 
+  recordBytes[payloadBytes.length] = 0x02;
 
-  
+  // 8. AES-128-GCM encryption
   const aesKey = await crypto.subtle.importKey("raw", cek as unknown as BufferSource, { name: "AES-GCM" }, false, ["encrypt"]);
   const ciphertextBuffer = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: nonce as unknown as BufferSource, tagLength: 128 },
@@ -253,8 +248,7 @@ async function encryptPayload(
   );
   const ciphertext = new Uint8Array(ciphertextBuffer);
 
-  
-  
+  // 9. Frame aes128gcm header: salt (16) + record_size 4096 (4) + key_id_len 65 (1) + server_public_key (65)
   const recordSize = 4096;
   const header = new Uint8Array(16 + 4 + 1 + 65);
   header.set(salt, 0);
@@ -262,7 +256,7 @@ async function encryptPayload(
   header[17] = (recordSize >> 16) & 0xff;
   header[18] = (recordSize >> 8) & 0xff;
   header[19] = recordSize & 0xff;
-  header[20] = 65; 
+  header[20] = 65;
   header.set(localPublicKeyRaw, 21);
 
   const encryptedRecord = new Uint8Array(header.length + ciphertext.length);
@@ -285,6 +279,7 @@ export async function sendWebPushNotification(
       method: "POST",
       headers: {
         ...vapidHeaders,
+        "Crypto-Key": `p256ecdsa=${vapid.publicKey}`,
         "Content-Type": "application/octet-stream",
         "Content-Encoding": "aes128gcm",
         "TTL": "86400",
@@ -315,10 +310,9 @@ export async function sendWebPushNotification(
 export async function broadcastPushNotification(
   db: D1Database,
   payload: PushPayload
-): Promise<{ sent: number; failed: number; total: number }> {
+): Promise<{ sent: number; failed: number; total: number; errors?: string[] }> {
   const vapidKeys = await getOrInitVapidKeys(db);
 
-  
   await db
     .exec(`
       CREATE TABLE IF NOT EXISTS push_subscriptions (
@@ -347,12 +341,13 @@ export async function broadcastPushNotification(
     }
   } catch (e) {
     console.error("Failed to query push subscriptions:", e);
-    return { sent: 0, failed: 0, total: 0 };
+    return { sent: 0, failed: 0, total: 0, errors: ["Database query failed"] };
   }
 
   let sent = 0;
   let failed = 0;
   const expiredEndpoints: string[] = [];
+  const errors: string[] = [];
 
   for (const sub of subscriptions) {
     const res = await sendWebPushNotification(sub, payload, vapidKeys);
@@ -360,19 +355,18 @@ export async function broadcastPushNotification(
       sent++;
     } else {
       failed++;
-      
+      if (res.error) errors.push(res.error);
       if (res.statusCode === 404 || res.statusCode === 410) {
         expiredEndpoints.push(sub.endpoint);
       }
     }
   }
 
-  
   if (expiredEndpoints.length > 0) {
     for (const ep of expiredEndpoints) {
       await db.prepare("DELETE FROM push_subscriptions WHERE endpoint = ?").bind(ep).run().catch(() => {});
     }
   }
 
-  return { sent, failed, total: subscriptions.length };
+  return { sent, failed, total: subscriptions.length, errors: errors.length > 0 ? errors : undefined };
 }

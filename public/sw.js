@@ -1,4 +1,3 @@
-
 self.addEventListener("install", () => {
   self.skipWaiting();
 });
@@ -11,8 +10,8 @@ self.addEventListener("push", (event) => {
   let data = {
     title: "AN Fitness Update",
     body: "New update from AN Fitness!",
-    icon: "/icon-192.png",
-    badge: "/icon-192.png",
+    icon: "/assets/logos/favicon.svg",
+    badge: "/assets/logos/favicon.svg",
     url: "/events",
   };
 
@@ -27,8 +26,8 @@ self.addEventListener("push", (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || "/icon-192.png",
-    badge: data.badge || "/icon-192.png",
+    icon: data.icon || "/assets/logos/favicon.svg",
+    badge: data.badge || "/assets/logos/favicon.svg",
     image: data.image || undefined,
     tag: data.tag || "an-fitness-notification",
     data: {
