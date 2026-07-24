@@ -103,7 +103,7 @@ export async function POST(request: Request) {
     const result = await broadcastPushNotification(db, {
       title: itemType === "notification" ? `📢 ${cleanTitle}` : `🏋️ ${cleanTitle}`,
       body: cleanBody.length > 120 ? `${cleanBody.substring(0, 117)}...` : cleanBody,
-      icon: "/assets/logos/favicon.svg",
+      icon: "/assets/logos/web-app-manifest-192x192.png",
       image: (image || "").toString().trim() || undefined,
       url: (url || "/events").toString().trim(),
       type: itemType,

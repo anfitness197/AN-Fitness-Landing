@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       {
         title: "🎉 Welcome to AN Fitness Alerts!",
         body: "You have successfully subscribed to push notifications. Stay tuned for exciting gym events, schedules & announcements!",
-        icon: "/assets/logos/favicon.svg",
+        icon: "/assets/logos/web-app-manifest-192x192.png",
         url: "/events",
         type: "notification",
         tag: "welcome-push-alert",

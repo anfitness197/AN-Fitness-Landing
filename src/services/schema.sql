@@ -48,7 +48,9 @@ CREATE TABLE IF NOT EXISTS gallery (
     id TEXT PRIMARY KEY,
     url TEXT,
     category TEXT,
-    title TEXT
+    title TEXT,
+    type TEXT DEFAULT 'image',
+    created_at INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS events (

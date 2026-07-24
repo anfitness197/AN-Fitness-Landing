@@ -10,6 +10,7 @@ interface GalleryItem {
   url: string;
   category: string;
   title: string;
+  type?: "image" | "video";
 }
 
 const GALLERY_CACHE_KEY = "an_gallery_cache";

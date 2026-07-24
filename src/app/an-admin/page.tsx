@@ -4,11 +4,12 @@ export const runtime = "edge";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Plus, Save, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, 
-  Dumbbell, MessageSquare, ShieldAlert, Key, LogOut, Loader2, Sparkles, RefreshCw, Megaphone, Calendar, FileText, Bell, Send, CheckCircle2
+import {
+  Plus, Save, Trash2, Edit2, X, Check, Upload, Image as ImageIcon,
+  Dumbbell, MessageSquare, ShieldAlert, Key, LogOut, Loader2, Sparkles, RefreshCw, Megaphone, Calendar, FileText, Bell, Send, CheckCircle2, Video, Play
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getMediaThumbnail, isVideoUrl } from "@/lib/cloudinary";
 
 interface OfferCard {
   id: string;
@@ -16,7 +17,7 @@ interface OfferCard {
   subtitle: string;
   price: string;
   badge: string;
-  features: string | string[]; 
+  features: string | string[];
   whatsappText: string;
   active: number;
 }
@@ -26,7 +27,7 @@ interface MembershipCard {
   name: string;
   price: number;
   billing: string;
-  features: string | string[]; 
+  features: string | string[];
   popular: number;
   badge: string;
 }
@@ -36,6 +37,7 @@ interface GalleryItem {
   url: string;
   category: string;
   title: string;
+  type?: "image" | "video";
 }
 
 interface GymEvent {
@@ -127,7 +129,7 @@ const generateWhatsappMessage = (title: string, price: string, subtitle: string)
   const cleanTitle = title.trim();
   const cleanPrice = price.trim() === "₹" ? "" : price.trim();
   const cleanSubtitle = subtitle.trim();
-  
+
   let msg = "Hi AN Fitness, I want to claim the offer";
   if (cleanTitle) {
     msg += `: ${cleanTitle}`;
@@ -175,6 +177,7 @@ export default function AdminDashboard() {
   const [newMembership, setNewMembership] = useState<MembershipCard | null>(null);
 
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [galleryFilter, setGalleryFilter] = useState("all");
   const [uploadCategory, setUploadCategory] = useState("strength");
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -187,7 +190,7 @@ export default function AdminDashboard() {
   const [adminEventsFilter, setAdminEventsFilter] = useState<"all" | "event" | "notification">("all");
   const [showQuickPushForm, setShowQuickPushForm] = useState(false);
 
-  
+
   const [pushStatus, setPushStatus] = useState<{ subscriberCount: number; vapidPublicKey: string; vapidSubject: string } | null>(null);
   const [isLoadingPush, setIsLoadingPush] = useState(false);
   const [pushTitle, setPushTitle] = useState("");
@@ -304,11 +307,11 @@ export default function AdminDashboard() {
         setAnnouncementActive(data.active === 1);
       }
     } catch {
-      
+
     }
   };
 
-  
+
   const fetchOffers = async () => {
     setIsLoadingOffers(true);
     try {
@@ -325,7 +328,7 @@ export default function AdminDashboard() {
 
   const handleSaveOffer = async (offer: OfferCard, isNew = false) => {
     try {
-      
+
       let parsedFeatures = offer.features;
       if (typeof parsedFeatures === "string") {
         parsedFeatures = parsedFeatures.split("\n").map(f => f.trim()).filter(Boolean);
@@ -367,7 +370,7 @@ export default function AdminDashboard() {
     }
   };
 
-  
+
   const fetchMemberships = async () => {
     setIsLoadingMemberships(true);
     try {
@@ -425,7 +428,7 @@ export default function AdminDashboard() {
     }
   };
 
-  
+
   const fetchGallery = async () => {
     setIsLoadingGallery(true);
     try {
@@ -450,9 +453,10 @@ export default function AdminDashboard() {
       const file = files[i];
       const id = `${Date.now()}-${i}-${Math.random().toString(36).substring(2, 5)}`;
       const preview = URL.createObjectURL(file);
-      
+
       const category = uploadCategory;
       const title = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+      const isVideo = file.type.startsWith("video/");
 
       newTasks.push({
         id,
@@ -460,14 +464,18 @@ export default function AdminDashboard() {
         preview,
         title,
         category,
-        status: "compressing",
+        status: isVideo ? "idle" : "compressing",
         originalSize: file.size,
+        compressedSize: isVideo ? file.size : undefined,
       });
     }
 
     setUploadTasks((prev) => [...prev, ...newTasks]);
 
     for (const task of newTasks) {
+      if (task.file.type.startsWith("video/")) {
+        continue;
+      }
       await new Promise((resolve) => setTimeout(resolve, 80));
       try {
         const compressed = await compressImage(task.file);
@@ -477,11 +485,11 @@ export default function AdminDashboard() {
             prev.map((t) =>
               t.id === task.id
                 ? {
-                    ...t,
-                    status: "error",
-                    errorMsg: "File too large (> 2MB)",
-                    compressedSize: compressed.size,
-                  }
+                  ...t,
+                  status: "error",
+                  errorMsg: "File too large (> 2MB)",
+                  compressedSize: compressed.size,
+                }
                 : t
             )
           );
@@ -491,12 +499,12 @@ export default function AdminDashboard() {
             prev.map((t) =>
               t.id === task.id
                 ? {
-                    ...t,
-                    file: compressed,
-                    preview: URL.createObjectURL(compressed),
-                    status: "idle",
-                    compressedSize: compressed.size,
-                  }
+                  ...t,
+                  file: compressed,
+                  preview: URL.createObjectURL(compressed),
+                  status: "idle",
+                  compressedSize: compressed.size,
+                }
                 : t
             )
           );
@@ -506,10 +514,10 @@ export default function AdminDashboard() {
           prev.map((t) =>
             t.id === task.id
               ? {
-                  ...t,
-                  status: "error",
-                  errorMsg: "Processing failed",
-                }
+                ...t,
+                status: "error",
+                errorMsg: "Processing failed",
+              }
               : t
           )
         );
@@ -568,6 +576,7 @@ export default function AdminDashboard() {
             url: fileUrl,
             category: task.category,
             title: task.title || "Untitled Lift",
+            type: uploadData.type || (task.file.type.startsWith("video/") ? "video" : "image"),
           }),
         });
 
@@ -607,20 +616,23 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteGallery = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this photo?")) return;
+    if (!confirm("Are you sure you want to delete this media item?")) return;
     try {
-      const res = await fetch(`/api/gallery/${id}`, { method: "DELETE" });
+      let res = await fetch(`/api/gallery?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!res.ok) {
+        res = await fetch(`/api/gallery/${encodeURIComponent(id)}`, { method: "DELETE" });
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Delete failed");
 
-      addToast("Photo deleted from gallery.", "success");
+      addToast("Media item deleted from gallery.", "success");
       fetchGallery();
     } catch (err: any) {
-      addToast(err.message || "Failed to delete photo", "error");
+      addToast(err.message || "Failed to delete item", "error");
     }
   };
 
-  
+
   const fetchEvents = async () => {
     setIsLoadingEvents(true);
     try {
@@ -706,7 +718,7 @@ export default function AdminDashboard() {
     }
   };
 
-  
+
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -774,7 +786,7 @@ export default function AdminDashboard() {
     }
   };
 
-  
+
   const getFeaturesArray = (features: any): string[] => {
     if (Array.isArray(features)) return features;
     if (typeof features === "string") {
@@ -782,7 +794,7 @@ export default function AdminDashboard() {
         const parsed = JSON.parse(features);
         if (Array.isArray(parsed)) return parsed;
       } catch (e) {
-        
+
         return features.split("\n").map(f => f.trim()).filter(Boolean);
       }
     }
@@ -827,55 +839,50 @@ export default function AdminDashboard() {
         <nav className="flex-1 p-4 flex flex-col gap-1.5">
           <button
             onClick={() => setActiveTab("offers")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${
-              activeTab === "offers" 
-                ? "bg-brandRed text-white shadow-lg shadow-brandRed/20" 
-                : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
-            }`}
+            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${activeTab === "offers"
+              ? "bg-brandRed text-white shadow-lg shadow-brandRed/20"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
+              }`}
           >
             <Sparkles size={16} />
             Special Offers
           </button>
           <button
             onClick={() => setActiveTab("memberships")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${
-              activeTab === "memberships" 
-                ? "bg-brandRed text-white shadow-lg shadow-brandRed/20" 
-                : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
-            }`}
+            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${activeTab === "memberships"
+              ? "bg-brandRed text-white shadow-lg shadow-brandRed/20"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
+              }`}
           >
             <Dumbbell size={16} />
             Memberships
           </button>
           <button
             onClick={() => setActiveTab("gallery")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${
-              activeTab === "gallery" 
-                ? "bg-brandRed text-white shadow-lg shadow-brandRed/20" 
-                : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
-            }`}
+            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${activeTab === "gallery"
+              ? "bg-brandRed text-white shadow-lg shadow-brandRed/20"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
+              }`}
           >
             <ImageIcon size={16} />
             Gallery
           </button>
           <button
             onClick={() => setActiveTab("events")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${
-              activeTab === "events" 
-                ? "bg-brandRed text-white shadow-lg shadow-brandRed/20" 
-                : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
-            }`}
+            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${activeTab === "events"
+              ? "bg-brandRed text-white shadow-lg shadow-brandRed/20"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
+              }`}
           >
             <Calendar size={16} />
             Events & Notifications
           </button>
           <button
             onClick={() => setActiveTab("settings")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${
-              activeTab === "settings" 
-                ? "bg-brandRed text-white shadow-lg shadow-brandRed/20" 
-                : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
-            }`}
+            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${activeTab === "settings"
+              ? "bg-brandRed text-white shadow-lg shadow-brandRed/20"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
+              }`}
           >
             <Key size={16} />
             Change Password
@@ -909,8 +916,8 @@ export default function AdminDashboard() {
                 toast.type === "error"
                   ? "bg-zinc-950 border-brandRed/30 text-brandRed-light"
                   : toast.type === "info"
-                  ? "bg-zinc-950 border-blue-500/30 text-blue-400"
-                  : "bg-zinc-950 border-emerald-500/30 text-emerald-400"
+                    ? "bg-zinc-950 border-blue-500/30 text-blue-400"
+                    : "bg-zinc-950 border-emerald-500/30 text-emerald-400"
               )}
             >
               <span className={cn(
@@ -918,8 +925,8 @@ export default function AdminDashboard() {
                 toast.type === "error"
                   ? "bg-brandRed animate-pulse"
                   : toast.type === "info"
-                  ? "bg-blue-500"
-                  : "bg-emerald-500 animate-ping"
+                    ? "bg-blue-500"
+                    : "bg-emerald-500 animate-ping"
               )} />
               <span className="text-[11px] font-medium leading-relaxed">{toast.message}</span>
               <button
@@ -1045,7 +1052,7 @@ export default function AdminDashboard() {
                       <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${announcementActive ? 'bg-brandRed border-brandRed' : 'border-zinc-800 bg-zinc-950/80 group-hover/check:border-zinc-700'}`}>
                         {announcementActive && (
                           <svg className="w-2.5 h-2.5 text-white fill-current" viewBox="0 0 24 24">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                           </svg>
                         )}
                       </div>
@@ -1080,7 +1087,7 @@ export default function AdminDashboard() {
                     <span className="w-1.5 h-1.5 rounded-full bg-brandRed" />
                     {newOffer ? "Creating New Offer Card" : "No Offers Present. Create one now."}
                   </h3>
-                  
+
                   {newOffer ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
@@ -1251,23 +1258,21 @@ export default function AdminDashboard() {
                     return (
                       <div
                         key={offer.id}
-                        className={`relative rounded-3xl p-8 sm:p-10 transition-all duration-300 shadow-xl group flex flex-col justify-between ${
-                          isEditing
-                            ? "border-2 border-brandRed/50 bg-zinc-900/20"
-                            : "border border-zinc-900/80 hover:border-zinc-800 bg-zinc-900/10 bg-gradient-to-b from-zinc-900/30 to-transparent"
-                        }`}
+                        className={`relative rounded-3xl p-8 sm:p-10 transition-all duration-300 shadow-xl group flex flex-col justify-between ${isEditing
+                          ? "border-2 border-brandRed/50 bg-zinc-900/20"
+                          : "border border-zinc-900/80 hover:border-zinc-800 bg-zinc-900/10 bg-gradient-to-b from-zinc-900/30 to-transparent"
+                          }`}
                       >
 
                         {!isEditing && (
-                          <div className={`absolute top-4 right-4 text-[8px] font-mono font-bold tracking-widest px-2 py-0.5 rounded-md ${
-                            offer.active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-zinc-800 text-zinc-500 border border-zinc-700/50"
-                          }`}>
+                          <div className={`absolute top-4 right-4 text-[8px] font-mono font-bold tracking-widest px-2 py-0.5 rounded-md ${offer.active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-zinc-800 text-zinc-500 border border-zinc-700/50"
+                            }`}>
                             {offer.active ? "LIVE ON HOMEPAGE" : "DRAFT/INACTIVE"}
                           </div>
                         )}
 
                         {isEditing ? (
-                          
+
                           <div className="space-y-4">
                             <div>
                               <label className="text-[8px] font-mono text-zinc-500 uppercase block mb-1">Badge Ribbon</label>
@@ -1361,7 +1366,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         ) : (
-                          
+
                           <div className="flex flex-col justify-between h-full min-h-[250px]">
                             <div>
                               {offer.badge && (
@@ -1555,13 +1560,12 @@ export default function AdminDashboard() {
                     return (
                       <div
                         key={membership.id}
-                        className={`relative rounded-3xl p-6 sm:p-8 transition-all duration-300 shadow-xl group flex flex-col justify-between ${
-                          isEditing
-                            ? "border-2 border-brandRed/50 bg-zinc-900/20"
-                            : membership.popular
-                              ? "border-2 border-brandRed bg-zinc-900/10 shadow-[0_0_20px_rgba(214,26,31,0.15)] bg-gradient-to-b from-brandRed/5 to-transparent"
-                              : "border border-zinc-900/80 hover:border-zinc-800 bg-zinc-900/10 bg-gradient-to-b from-zinc-900/30 to-transparent"
-                        }`}
+                        className={`relative rounded-3xl p-6 sm:p-8 transition-all duration-300 shadow-xl group flex flex-col justify-between ${isEditing
+                          ? "border-2 border-brandRed/50 bg-zinc-900/20"
+                          : membership.popular
+                            ? "border-2 border-brandRed bg-zinc-900/10 shadow-[0_0_20px_rgba(214,26,31,0.15)] bg-gradient-to-b from-brandRed/5 to-transparent"
+                            : "border border-zinc-900/80 hover:border-zinc-800 bg-zinc-900/10 bg-gradient-to-b from-zinc-900/30 to-transparent"
+                          }`}
                       >
 
                         {!isEditing && membership.popular === 1 && (
@@ -1571,7 +1575,7 @@ export default function AdminDashboard() {
                         )}
 
                         {isEditing ? (
-                          
+
                           <div className="space-y-4">
                             <div>
                               <label className="text-[8px] font-mono text-zinc-500 uppercase block mb-1">Badge Label</label>
@@ -1655,7 +1659,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         ) : (
-                          
+
                           <div className="flex flex-col justify-between h-full min-h-[280px]">
                             <div>
                               <h3 className="font-heading font-black text-lg sm:text-xl text-white uppercase tracking-tight leading-none mb-1">
@@ -1712,18 +1716,18 @@ export default function AdminDashboard() {
 
                   <div className="lg:col-span-3 flex flex-col gap-4">
                     <label className="text-[10px] font-mono font-black text-zinc-400 uppercase tracking-widest pl-1">
-                      Select Image Files (Multiple allowed)
+                      Select Image & Video Files (Multiple allowed)
                     </label>
-                    
+
                     <div className="relative border border-dashed border-zinc-800 hover:border-brandRed/40 bg-zinc-950/40 rounded-2xl p-8 flex flex-col items-center justify-center text-center group transition-all duration-300 min-h-[120px] cursor-pointer">
                       <div className="flex flex-col items-center">
                         <Upload size={28} className="text-zinc-600 group-hover:text-brandRed transition-colors mb-2" />
-                        <span className="text-xs font-bold text-zinc-300 uppercase tracking-wide">Choose Pictures</span>
-                        <span className="text-[10px] text-zinc-600 mt-1 uppercase font-mono">PNG, JPG, WEBP (Max 2MB per file after compression)</span>
+                        <span className="text-xs font-bold text-zinc-300 uppercase tracking-wide">Choose Media Files</span>
+                        <span className="text-[10px] text-zinc-600 mt-1 uppercase font-mono">PNG, JPG, WEBP, MP4, WEBM (Photos & Videos)</span>
                       </div>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/*,video/*"
                         multiple
                         onChange={handleImageChange}
                         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
@@ -1741,21 +1745,28 @@ export default function AdminDashboard() {
                         {uploadTasks.map((task) => (
                           <div
                             key={task.id}
-                            className={`flex flex-col gap-3 p-4 rounded-2xl bg-zinc-950/80 border transition-colors ${
-                              task.status === "error"
-                                ? "border-brandRed/30 bg-brandRed/5"
-                                : task.status === "success"
+                            className={`flex flex-col gap-3 p-4 rounded-2xl bg-zinc-950/80 border transition-colors ${task.status === "error"
+                              ? "border-brandRed/30 bg-brandRed/5"
+                              : task.status === "success"
                                 ? "border-emerald-500/30 bg-emerald-500/5"
                                 : "border-zinc-900 bg-zinc-900/10"
-                            }`}
+                              }`}
                           >
                             <div className="flex gap-4 items-center">
-                              <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-zinc-900 shrink-0 border border-zinc-800">
+                              <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-zinc-900 shrink-0 border border-zinc-800 flex items-center justify-center">
+                                {task.file.type.startsWith("video/") ? (
+                                  <div className="w-full h-full relative bg-black flex items-center justify-center">
+                                    <video src={task.preview} className="w-full h-full object-cover" muted preload="metadata" />
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+                                      <Play size={14} className="text-white fill-white ml-0.5" />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <img src={task.preview} alt="Upload preview" className="w-full h-full object-cover" />
+                                )}
 
-                                <img src={task.preview} alt="Upload preview" className="w-full h-full object-cover" />
-                                
                                 {(task.status === "compressing" || task.status === "uploading") && (
-                                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
                                     <Loader2 size={12} className="animate-spin text-brandRed" />
                                   </div>
                                 )}
@@ -1786,31 +1797,35 @@ export default function AdminDashboard() {
                                 </div>
 
                                 <div className="flex items-center justify-between gap-2">
-                                  <select
-                                    value={task.category}
-                                    onChange={(e) =>
-                                      setUploadTasks((prev) =>
-                                        prev.map((t) => (t.id === task.id ? { ...t, category: e.target.value } : t))
-                                      )
-                                    }
-                                    className="bg-zinc-950 border border-zinc-900 text-[10px] text-zinc-400 rounded-lg px-2 py-1 outline-none cursor-pointer"
-                                    disabled={isUploading || task.status === "success"}
-                                  >
-                                    <option value="strength">STRENGTH DECK</option>
-                                    <option value="combat">COMBAT ZONE</option>
-                                    <option value="recovery">RECOVERY SPA</option>
-                                    <option value="facility">FACILITY ROOMS</option>
-                                  </select>
+                                  <div className="flex items-center gap-2">
+                                    <select
+                                      value={task.category}
+                                      onChange={(e) =>
+                                        setUploadTasks((prev) =>
+                                          prev.map((t) => (t.id === task.id ? { ...t, category: e.target.value } : t))
+                                        )
+                                      }
+                                      className="bg-zinc-950 border border-zinc-900 text-[10px] text-zinc-400 rounded-lg px-2 py-1 outline-none cursor-pointer"
+                                      disabled={isUploading || task.status === "success"}
+                                    >
+                                      <option value="strength">STRENGTH DECK</option>
+                                      <option value="combat">COMBAT ZONE</option>
+                                      <option value="recovery">RECOVERY SPA</option>
+                                      <option value="facility">FACILITY ROOMS</option>
+                                    </select>
+                                    <span className="text-[9px] font-mono text-zinc-500 uppercase">
+                                      {task.file.type.startsWith("video/") ? "📹 Video" : "📷 Photo"} • {(task.file.size / (1024 * 1024)).toFixed(1)} MB
+                                    </span>
+                                  </div>
 
-                                  <span className={`text-[9px] font-mono uppercase font-black ${
-                                    task.status === "error"
-                                      ? "text-brandRed"
-                                      : task.status === "success"
+                                  <span className={`text-[9px] font-mono uppercase font-black ${task.status === "error"
+                                    ? "text-brandRed"
+                                    : task.status === "success"
                                       ? "text-emerald-500"
                                       : task.status === "uploading" || task.status === "compressing"
-                                      ? "text-brandRed animate-pulse"
-                                      : "text-zinc-500"
-                                  }`}>
+                                        ? "text-brandRed animate-pulse"
+                                        : "text-zinc-500"
+                                    }`}>
                                     {(task.status === "compressing" || task.status === "uploading") && "Processing..."}
                                     {task.status === "idle" && "Ready"}
                                     {task.status === "success" && "Uploaded"}
@@ -1841,7 +1856,7 @@ export default function AdminDashboard() {
                           </>
                         ) : (
                           <>
-                            UPLOAD ALL READY PHOTOS ({uploadTasks.filter(t => t.status === "idle").length})
+                            UPLOAD ALL READY MEDIA ({uploadTasks.filter(t => t.status === "idle").length})
                           </>
                         )}
                       </button>
@@ -1850,43 +1865,98 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
+              {/* Gallery Media Filter Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-zinc-900/20 border border-zinc-900 rounded-2xl p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { id: "all", label: "ALL MEDIA" },
+                    { id: "video", label: "🎥 VIDEOS" },
+                    { id: "image", label: "📷 PHOTOS" },
+                    { id: "strength", label: "STRENGTH" },
+                    { id: "facility", label: "FACILITY" },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setGalleryFilter(f.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${galleryFilter === f.id
+                        ? "bg-brandRed text-white shadow-md"
+                        : "bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                        }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+              </div>
+
               {isLoadingGallery ? (
                 <div className="py-20 flex justify-center items-center">
                   <Loader2 size={32} className="animate-spin text-brandRed" />
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {gallery.map((photo) => (
-                    <div
-                      key={photo.id}
-                      className="group relative aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-900 hover:border-zinc-800 shadow-lg transition-all duration-300"
-                    >
+                  {gallery
+                    .filter((photo) => {
+                      const isVid = isVideoUrl(photo.url, photo.type);
+                      if (galleryFilter === "all") return true;
+                      if (galleryFilter === "video") return isVid;
+                      if (galleryFilter === "image") return !isVid;
+                      return (photo.category || "").toLowerCase() === galleryFilter.toLowerCase();
+                    })
+                    .map((photo) => {
+                      const isVideo = isVideoUrl(photo.url, photo.type);
+                      const thumbnailUrl = getMediaThumbnail(photo.url, photo.type);
+                      return (
+                        <div
+                          key={photo.id}
+                          className="group relative aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-900 hover:border-zinc-800 shadow-lg transition-all duration-300"
+                        >
+                          {isVideo ? (
+                            <div className="w-full h-full relative bg-black">
+                              <img
+                                src={thumbnailUrl}
+                                alt={photo.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-90 group-hover:brightness-100"
+                              />
+                              <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                <div className="w-8 h-8 rounded-full bg-brandRed/90 backdrop-blur-md flex items-center justify-center text-white shadow-lg border border-white/20 group-hover:scale-110 transition-transform">
+                                  <Play size={14} className="fill-white ml-0.5" />
+                                </div>
+                              </div>
+                              <div className="absolute top-2 left-2 bg-black/75 backdrop-blur-md text-brandRed text-[8px] font-mono font-bold px-2 py-0.5 rounded flex items-center gap-1 border border-brandRed/30 z-10">
+                                <span className="w-1.5 h-1.5 rounded-full bg-brandRed animate-pulse" />
+                                VIDEO
+                              </div>
+                            </div>
+                          ) : (
+                            <img
+                              src={photo.url}
+                              alt={photo.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-95"
+                            />
+                          )}
 
-                      <img
-                        src={photo.url}
-                        alt={photo.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-95"
-                      />
-                      
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-between items-start">
+                            <span className="text-[8px] font-mono tracking-widest text-brandRed bg-brandRed/10 border border-brandRed/20 px-2 py-0.5 rounded uppercase font-bold">
+                              {photo.category}
+                            </span>
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-between items-start">
-                        <span className="text-[8px] font-mono tracking-widest text-brandRed bg-brandRed/10 border border-brandRed/20 px-2 py-0.5 rounded uppercase font-bold">
-                          {photo.category}
-                        </span>
-
-                        <div className="w-full flex justify-between items-center gap-2">
-                          <p className="text-[10px] font-bold text-white uppercase truncate flex-1 leading-none">{photo.title}</p>
-                          <button
-                            onClick={() => handleDeleteGallery(photo.id)}
-                            className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-900 hover:bg-brandRed hover:border-brandRed text-zinc-500 hover:text-white transition-colors cursor-pointer"
-                            title="Delete Photo"
-                          >
-                            <Trash2 size={12} />
-                          </button>
+                            <div className="w-full flex justify-between items-center gap-2">
+                              <p className="text-[10px] font-bold text-white uppercase truncate flex-1 leading-none">{photo.title}</p>
+                              <button
+                                onClick={() => handleDeleteGallery(photo.id)}
+                                className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-900 hover:bg-brandRed hover:border-brandRed text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                                title="Delete Item"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })}
 
                   {gallery.length === 0 && (
                     <div className="col-span-full py-16 text-center text-zinc-600 text-xs font-mono uppercase tracking-widest">
@@ -1913,7 +1983,7 @@ export default function AdminDashboard() {
                     </span>
                   </p>
                 </div>
-                
+
                 <div className="flex flex-wrap items-center gap-3 shrink-0">
                   <button
                     onClick={() => setNewEvent({
@@ -2289,25 +2359,22 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-2 border-b border-zinc-900 pb-3">
                 <button
                   onClick={() => setAdminEventsFilter("all")}
-                  className={`px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    adminEventsFilter === "all" ? "bg-zinc-800 text-white border border-zinc-700" : "text-zinc-500 hover:text-white"
-                  }`}
+                  className={`px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${adminEventsFilter === "all" ? "bg-zinc-800 text-white border border-zinc-700" : "text-zinc-500 hover:text-white"
+                    }`}
                 >
                   ALL ITEMS ({events.length})
                 </button>
                 <button
                   onClick={() => setAdminEventsFilter("event")}
-                  className={`px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    adminEventsFilter === "event" ? "bg-zinc-800 text-white border border-zinc-700" : "text-zinc-500 hover:text-white"
-                  }`}
+                  className={`px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${adminEventsFilter === "event" ? "bg-zinc-800 text-white border border-zinc-700" : "text-zinc-500 hover:text-white"
+                    }`}
                 >
                   EVENTS ONLY ({events.filter(e => e.type !== "notification").length})
                 </button>
                 <button
                   onClick={() => setAdminEventsFilter("notification")}
-                  className={`px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    adminEventsFilter === "notification" ? "bg-zinc-800 text-white border border-zinc-700" : "text-zinc-500 hover:text-white"
-                  }`}
+                  className={`px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${adminEventsFilter === "notification" ? "bg-zinc-800 text-white border border-zinc-700" : "text-zinc-500 hover:text-white"
+                    }`}
                 >
                   NOTIFICATIONS ONLY ({events.filter(e => e.type === "notification").length})
                 </button>
@@ -2336,9 +2403,8 @@ export default function AdminDashboard() {
                         return (
                           <div
                             key={ev.id}
-                            className={`bg-zinc-950 border rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row gap-5 justify-between items-start md:items-center transition-all ${
-                              isNotif ? "border-amber-500/30 hover:border-amber-500/50" : "border-zinc-800/80 hover:border-zinc-700"
-                            }`}
+                            className={`bg-zinc-950 border rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row gap-5 justify-between items-start md:items-center transition-all ${isNotif ? "border-amber-500/30 hover:border-amber-500/50" : "border-zinc-800/80 hover:border-zinc-700"
+                              }`}
                           >
                             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center flex-1">
                               {ev.posterUrl ? (
@@ -2356,11 +2422,10 @@ export default function AdminDashboard() {
                               <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <span
-                                    className={`text-[8px] font-mono font-bold tracking-widest border px-2 py-0.5 rounded uppercase flex items-center gap-1 ${
-                                      isNotif
-                                        ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                                        : "bg-brandRed/10 border-brandRed/20 text-brandRed"
-                                    }`}
+                                    className={`text-[8px] font-mono font-bold tracking-widest border px-2 py-0.5 rounded uppercase flex items-center gap-1 ${isNotif
+                                      ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                                      : "bg-brandRed/10 border-brandRed/20 text-brandRed"
+                                      }`}
                                   >
                                     {isNotif ? "📢 NOTIFICATION" : "🏋️ EVENT"}
                                   </span>
@@ -2416,14 +2481,14 @@ export default function AdminDashboard() {
                 <ShieldAlert className="text-brandRed" size={20} />
                 ADMIN SECURITY SETTING
               </h3>
-              
+
               <form onSubmit={handleUpdatePassword} className="flex flex-col gap-6">
                 {passwordStatus.error && (
                   <div className="bg-brandRed/10 border border-brandRed/20 text-brandRed-light text-xs px-4 py-3 rounded-xl">
                     {passwordStatus.error}
                   </div>
                 )}
-                
+
                 {passwordStatus.success && (
                   <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-4 py-3 rounded-xl">
                     {passwordStatus.success}

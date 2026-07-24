@@ -24,11 +24,17 @@ self.addEventListener("push", (event) => {
     }
   }
 
+  const resolveUrl = (path) => {
+    if (!path) return undefined;
+    if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) return path;
+    return new URL(path, self.location.origin).href;
+  };
+
   const options = {
     body: data.body,
-    icon: data.icon || "/assets/logos/web-app-manifest-192x192.png",
-    badge: data.badge || "/assets/logos/favicon-96x96.png",
-    image: data.image || undefined,
+    icon: resolveUrl(data.icon || "/assets/logos/web-app-manifest-192x192.png"),
+    badge: resolveUrl(data.badge || "/assets/logos/favicon-96x96.png"),
+    image: resolveUrl(data.image),
     tag: data.tag || `an-fitness-${Date.now()}`,
     data: {
       url: data.url || "/events",

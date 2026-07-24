@@ -2,13 +2,14 @@
 
 import React, { useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 
 interface GalleryItem {
   id: string;
   url: string;
   category: string;
   title: string;
+  type?: "image" | "video";
 }
 
 interface GalleryCarouselProps {
@@ -70,7 +71,7 @@ export const GalleryCarousel: React.FC<GalleryCarouselProps> = ({ photos }) => {
   if (!photos || photos.length === 0) {
     return (
       <div className="py-12 text-center text-zinc-600 font-mono text-xs uppercase tracking-widest">
-        No training photos uploaded yet.
+        No training media uploaded yet.
       </div>
     );
   }
@@ -101,25 +102,46 @@ export const GalleryCarousel: React.FC<GalleryCarouselProps> = ({ photos }) => {
         onScroll={handleScroll}
         className="flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 scroll-smooth pb-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       >
-        {photos.map((photo) => (
-          <div
-            key={photo.id}
-            className="w-[240px] xs:w-[260px] sm:w-[285px] md:w-[350px] shrink-0 snap-start snap-always"
-          >
-            <div className="relative aspect-square overflow-hidden bg-zinc-900 border border-zinc-900 hover:border-zinc-800 rounded-2xl sm:rounded-3xl group shadow-xl transition-all duration-300">
-              <GalleryImage src={photo.url} alt={photo.title} />
+        {photos.map((photo) => {
+          const isVideo = photo.type === "video" || /\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i.test(photo.url) || photo.url.includes("/video/upload/");
+          return (
+            <div
+              key={photo.id}
+              className="w-[240px] xs:w-[260px] sm:w-[285px] md:w-[350px] shrink-0 snap-start snap-always"
+            >
+              <div className="relative aspect-square overflow-hidden bg-zinc-900 border border-zinc-900 hover:border-zinc-800 rounded-2xl sm:rounded-3xl group shadow-xl transition-all duration-300">
+                {isVideo ? (
+                  <div className="w-full h-full relative bg-black">
+                    <video
+                      src={photo.url}
+                      className="w-full h-full object-cover filter brightness-[0.88] group-hover:scale-105 transition-transform duration-700"
+                      muted
+                      autoPlay
+                      loop
+                      playsInline
+                    />
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+                      <div className="w-10 h-10 rounded-full bg-brandRed/90 backdrop-blur-md flex items-center justify-center text-white shadow-lg border border-white/20 group-hover:scale-110 transition-transform">
+                        <Play size={18} className="fill-white ml-0.5" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <GalleryImage src={photo.url} alt={photo.title} />
+                )}
 
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 sm:p-6 flex flex-col justify-end items-start z-10">
-                <span className="text-[8px] sm:text-[9px] font-mono tracking-widest text-brandRed bg-brandRed/10 border border-brandRed/20 px-2 py-0.5 rounded uppercase font-bold mb-2">
-                  {photo.category}
-                </span>
-                <p className="text-xs sm:text-sm font-bold text-white uppercase truncate w-full leading-none tracking-wide">
-                  {photo.title}
-                </p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 sm:p-6 flex flex-col justify-end items-start z-10">
+                  <span className="text-[8px] sm:text-[9px] font-mono tracking-widest text-brandRed bg-brandRed/10 border border-brandRed/20 px-2 py-0.5 rounded uppercase font-bold mb-2">
+                    {photo.category}
+                  </span>
+                  <p className="text-xs sm:text-sm font-bold text-white uppercase truncate w-full leading-none tracking-wide">
+                    {photo.title}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="flex justify-center gap-1.5 sm:gap-2 mt-4">

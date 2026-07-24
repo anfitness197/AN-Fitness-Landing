@@ -3,17 +3,21 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, X, Maximize2, Minimize2, Loader2, ImageOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Maximize2, Minimize2, Loader2, ImageOff, Play, Video, Camera } from "lucide-react";
+import { getMediaThumbnail, isVideoUrl } from "@/lib/cloudinary";
 
 interface GalleryItem {
   id: string;
   url: string;
   category: string;
   title: string;
+  type?: "image" | "video";
 }
 
 const CATEGORIES = [
-  { id: "all", label: "ALL AREAS" },
+  { id: "all", label: "ALL MEDIA" },
+  { id: "videos", label: "🎥 VIDEOS" },
+  { id: "photos", label: "📷 PHOTOS" },
   { id: "strength", label: "STRENGTH DECK" },
   { id: "facility", label: "GYM FACILITY" },
 ];
@@ -107,9 +111,13 @@ export default function GalleryPage() {
     loadGallery();
   }, []);
 
-  const filteredPhotos = selectedCategory === "all"
-    ? photos
-    : photos.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
+  const filteredPhotos = photos.filter((photo) => {
+    const isVideo = isVideoUrl(photo.url, photo.type);
+    if (selectedCategory === "all") return true;
+    if (selectedCategory === "videos") return isVideo;
+    if (selectedCategory === "photos") return !isVideo;
+    return (photo.category || "").toLowerCase() === selectedCategory.toLowerCase();
+  });
 
   
   const handleCategoryChange = (catId: string) => {
@@ -231,35 +239,58 @@ export default function GalleryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-            {filteredPhotos.map((photo, index) => (
-              <div
-                key={photo.id}
-                onClick={() => setLightboxIndex(index)}
-                className="group relative aspect-square rounded-xl sm:rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-900/80 hover:border-zinc-800 shadow-xl cursor-pointer transition-all duration-300"
-              >
-                <GalleryImage
-                  src={photo.url}
-                  alt={photo.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-95 group-hover:brightness-100"
-                />
+            {filteredPhotos.map((photo, index) => {
+              const isVideo = isVideoUrl(photo.url, photo.type);
+              const thumbnailUrl = getMediaThumbnail(photo.url, photo.type);
+              return (
+                <div
+                  key={photo.id}
+                  onClick={() => setLightboxIndex(index)}
+                  className="group relative aspect-square rounded-xl sm:rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-900/80 hover:border-zinc-800 shadow-xl cursor-pointer transition-all duration-300"
+                >
+                  {isVideo ? (
+                    <div className="w-full h-full relative bg-black">
+                      <GalleryImage
+                        src={thumbnailUrl}
+                        alt={photo.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-90 group-hover:brightness-100"
+                      />
+                      <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-brandRed/90 backdrop-blur-md flex items-center justify-center text-white shadow-lg border border-white/20 group-hover:scale-110 transition-transform">
+                          <Play size={18} className="fill-white ml-0.5" />
+                        </div>
+                      </div>
+                      <div className="absolute top-2.5 left-2.5 bg-black/75 backdrop-blur-md text-brandRed text-[8px] font-mono font-bold px-2 py-0.5 rounded border border-brandRed/30 z-10 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brandRed animate-pulse" />
+                        VIDEO
+                      </div>
+                    </div>
+                  ) : (
+                    <GalleryImage
+                      src={photo.url}
+                      alt={photo.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-95 group-hover:brightness-100"
+                    />
+                  )}
 
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 sm:p-5 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 sm:p-5 pointer-events-none" />
 
-                <div className="absolute bottom-3 sm:bottom-5 left-3 sm:left-5 right-3 sm:right-5 z-10 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 flex justify-between items-center gap-2 sm:gap-3 pointer-events-none">
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[7px] sm:text-[8px] font-mono font-bold tracking-widest text-brandRed uppercase leading-none mb-1">
-                      {photo.category}
-                    </span>
-                    <h3 className="text-[10px] sm:text-xs font-black text-white uppercase leading-none truncate">
-                      {photo.title}
-                    </h3>
-                  </div>
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0">
-                    <Maximize2 size={10} className="text-zinc-400" />
+                  <div className="absolute bottom-3 sm:bottom-5 left-3 sm:left-5 right-3 sm:right-5 z-10 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 flex justify-between items-center gap-2 sm:gap-3 pointer-events-none">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[7px] sm:text-[8px] font-mono font-bold tracking-widest text-brandRed uppercase leading-none mb-1">
+                        {photo.category}
+                      </span>
+                      <h3 className="text-[10px] sm:text-xs font-black text-white uppercase leading-none truncate">
+                        {photo.title}
+                      </h3>
+                    </div>
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0">
+                      <Maximize2 size={10} className="text-zinc-400" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -308,12 +339,22 @@ export default function GalleryPage() {
             onClick={(e) => e.stopPropagation()}
             className="relative max-w-5xl max-h-[78vh] w-full flex-1 flex items-center justify-center my-auto p-2"
           >
-
-            <img
-              src={currentPhoto.url}
-              alt={currentPhoto.title || "Gallery Preview"}
-              className="max-w-full max-h-[75vh] object-contain rounded-xl sm:rounded-2xl select-none shadow-2xl border border-zinc-800/50"
-            />
+            {currentPhoto.type === "video" || /\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i.test(currentPhoto.url) || currentPhoto.url.includes("/video/upload/") ? (
+              <video
+                src={currentPhoto.url}
+                controls
+                autoPlay
+                loop
+                playsInline
+                className="max-w-full max-h-[75vh] object-contain rounded-xl sm:rounded-2xl shadow-2xl border border-zinc-800/50"
+              />
+            ) : (
+              <img
+                src={currentPhoto.url}
+                alt={currentPhoto.title || "Gallery Preview"}
+                className="max-w-full max-h-[75vh] object-contain rounded-xl sm:rounded-2xl select-none shadow-2xl border border-zinc-800/50"
+              />
+            )}
 
             {filteredPhotos.length > 1 && (
               <>

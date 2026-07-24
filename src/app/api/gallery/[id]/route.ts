@@ -17,41 +17,34 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = params;
+  const rawId = params.id ? decodeURIComponent(params.id) : "";
 
   try {
     const db = getDB();
 
-    
     const item = await db
-      .prepare("SELECT * FROM gallery WHERE id = ?")
-      .bind(id)
+      .prepare("SELECT * FROM gallery WHERE id = ? OR id = ?")
+      .bind(rawId, params.id)
       .first<{ id: string; url: string }>();
 
-    if (!item) {
-      return NextResponse.json({ error: "Gallery photo not found" }, { status: 404 });
-    }
-
-    
-    try {
-      const r2 = getR2();
-      let key = id;
+    if (item) {
       try {
-        const urlObj = new URL(item.url);
-        key = urlObj.pathname.startsWith("/") ? urlObj.pathname.slice(1) : urlObj.pathname;
-      } catch (e) {
-        
-      }
-      await r2.delete(key).catch(() => {});
-    } catch (err) {
-      
+        const r2 = getR2();
+        let key = item.id;
+        try {
+          const urlObj = new URL(item.url);
+          key = urlObj.pathname.startsWith("/") ? urlObj.pathname.slice(1) : urlObj.pathname;
+        } catch {}
+        await r2.delete(key).catch(() => {});
+      } catch {}
+
+      await db.prepare("DELETE FROM gallery WHERE id = ? OR id = ?").bind(item.id, rawId).run();
+    } else {
+      await db.prepare("DELETE FROM gallery WHERE id = ? OR id = ?").bind(rawId, params.id).run();
     }
 
-    
-    await db.prepare("DELETE FROM gallery WHERE id = ?").bind(id).run();
-
-    return NextResponse.json({ success: true, message: "Photo deleted successfully" });
+    return NextResponse.json({ success: true, message: "Gallery item deleted successfully" });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to delete photo" }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Failed to delete gallery item" }, { status: 500 });
   }
 }
