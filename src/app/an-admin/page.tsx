@@ -6,10 +6,15 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus, Save, Trash2, Edit2, X, Check, Upload, Image as ImageIcon,
-  Dumbbell, MessageSquare, ShieldAlert, Key, LogOut, Loader2, Sparkles, RefreshCw, Megaphone, Calendar, FileText, Bell, Send, CheckCircle2, Video, Play
+  Dumbbell, MessageSquare, ShieldAlert, Key, LogOut, Loader2, Sparkles, RefreshCw, Megaphone, Calendar, FileText, Bell, Send, CheckCircle2, Video, Play, Music
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMediaThumbnail, isVideoUrl } from "@/lib/cloudinary";
+import {
+  compressImageToWebp as compressImage,
+  convertVideoToWebm,
+  formatBytes,
+} from "@/lib/media-convert";
 
 interface OfferCard {
   id: string;
@@ -71,60 +76,6 @@ interface Toast {
   type: "success" | "error" | "info";
 }
 
-const compressImage = async (file: File): Promise<File> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
-
-        const MAX_WIDTH = 1600;
-        const MAX_HEIGHT = 1200;
-        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-          const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          reject(new Error("Canvas context failed"));
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const mimeType = "image/webp";
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
-              const compressedFile = new File([blob], `${nameWithoutExt}.webp`, {
-                type: mimeType,
-                lastModified: Date.now(),
-              });
-              resolve(compressedFile);
-            } else {
-              reject(new Error("Canvas blob creation failed"));
-            }
-          },
-          mimeType,
-          0.82
-        );
-      };
-      img.onerror = () => reject(new Error("Image loading failed"));
-    };
-    reader.onerror = () => reject(new Error("FileReader failed"));
-  });
-};
-
 const generateWhatsappMessage = (title: string, price: string, subtitle: string) => {
   const cleanTitle = title.trim();
   const cleanPrice = price.trim() === "₹" ? "" : price.trim();
@@ -145,7 +96,7 @@ const generateWhatsappMessage = (title: string, price: string, subtitle: string)
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"offers" | "memberships" | "gallery" | "events" | "settings">("offers");
+  const [activeTab, setActiveTab] = useState<"offers" | "memberships" | "gallery" | "events" | "banner" | "settings">("offers");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [username, setUsername] = useState("");
 
@@ -209,6 +160,18 @@ export default function AdminDashboard() {
   const [announcementActive, setAnnouncementActive] = useState(true);
   const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false);
 
+  const [mediaBannerUrl, setMediaBannerUrl] = useState("");
+  const [mediaBannerType, setMediaBannerType] = useState<"video" | "audio">("video");
+  const [mediaBannerActive, setMediaBannerActive] = useState(false);
+  const [mediaBannerExpiresAt, setMediaBannerExpiresAt] = useState("");
+  const [mediaBannerWidth, setMediaBannerWidth] = useState<number | undefined>();
+  const [mediaBannerHeight, setMediaBannerHeight] = useState<number | undefined>();
+  const [mediaBannerId, setMediaBannerId] = useState("");
+  const [isLoadingMediaBanner, setIsLoadingMediaBanner] = useState(false);
+  const [isSavingMediaBanner, setIsSavingMediaBanner] = useState(false);
+  const [isUploadingMediaBanner, setIsUploadingMediaBanner] = useState(false);
+  const [mediaBannerUploadLabel, setMediaBannerUploadLabel] = useState("");
+
   const [isLoadingOffers, setIsLoadingOffers] = useState(false);
   const [isLoadingMemberships, setIsLoadingMemberships] = useState(false);
   const [isLoadingGallery, setIsLoadingGallery] = useState(false);
@@ -242,6 +205,7 @@ export default function AdminDashboard() {
       fetchEvents();
       fetchPushStatus();
     }
+    if (activeTab === "banner") fetchMediaBanner();
     if (activeTab === "settings") fetchAnnouncement();
   }, [activeTab, isAuthenticated]);
 
@@ -307,6 +271,38 @@ export default function AdminDashboard() {
       }
     } catch {
 
+    }
+  };
+
+  const fetchMediaBanner = async () => {
+    setIsLoadingMediaBanner(true);
+    try {
+      const res = await fetch("/api/media-banner?admin=1");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load media banner");
+      setMediaBannerId(data.id || "");
+      setMediaBannerUrl(data.mediaUrl || "");
+      setMediaBannerType(data.mediaType === "audio" ? "audio" : "video");
+      setMediaBannerActive(data.active === 1);
+      setMediaBannerWidth(typeof data.width === "number" ? data.width : undefined);
+      setMediaBannerHeight(typeof data.height === "number" ? data.height : undefined);
+      if (data.expiresAt) {
+        const d = new Date(data.expiresAt);
+        if (!Number.isNaN(d.getTime())) {
+          const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16);
+          setMediaBannerExpiresAt(local);
+        } else {
+          setMediaBannerExpiresAt("");
+        }
+      } else {
+        setMediaBannerExpiresAt("");
+      }
+    } catch (err: any) {
+      addToast(err.message || "Failed to load media banner", "error");
+    } finally {
+      setIsLoadingMediaBanner(false);
     }
   };
 
@@ -452,7 +448,6 @@ export default function AdminDashboard() {
 
       const category = uploadCategory;
       const title = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-      const isVideo = file.type.startsWith("video/");
 
       newTasks.push({
         id,
@@ -460,30 +455,35 @@ export default function AdminDashboard() {
         preview,
         title,
         category,
-        status: isVideo ? "idle" : "compressing",
+        status: "compressing",
         originalSize: file.size,
-        compressedSize: isVideo ? file.size : undefined,
+        compressedSize: undefined,
       });
     }
 
     setUploadTasks((prev) => [...prev, ...newTasks]);
 
     for (const task of newTasks) {
-      if (task.file.type.startsWith("video/")) {
-        continue;
-      }
       await new Promise((resolve) => setTimeout(resolve, 80));
       try {
-        const compressed = await compressImage(task.file);
+        const isVideo = task.file.type.startsWith("video/");
+        setUploadTasks((prev) =>
+          prev.map((t) => (t.id === task.id ? { ...t, status: "compressing" } : t))
+        );
 
-        if (compressed.size > 2 * 1024 * 1024) {
+        const compressed = isVideo
+          ? await convertVideoToWebm(task.file)
+          : await compressImage(task.file);
+
+        const maxBytes = isVideo ? 40 * 1024 * 1024 : 2 * 1024 * 1024;
+        if (compressed.size > maxBytes) {
           setUploadTasks((prev) =>
             prev.map((t) =>
               t.id === task.id
                 ? {
                   ...t,
                   status: "error",
-                  errorMsg: "File too large (> 2MB)",
+                  errorMsg: isVideo ? "Video too large" : "File too large (> 2MB)",
                   compressedSize: compressed.size,
                 }
                 : t
@@ -770,6 +770,114 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleMediaBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const isVideo = file.type.startsWith("video/");
+    const isAudio = file.type.startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg)$/i.test(file.name);
+    if (!isVideo && !isAudio) {
+      addToast("Please choose a video or audio file.", "error");
+      return;
+    }
+
+    setIsUploadingMediaBanner(true);
+    try {
+      let uploadFile = file;
+      if (isVideo) {
+        setMediaBannerUploadLabel("Compressing video…");
+        uploadFile = await convertVideoToWebm(file);
+        if (uploadFile.size < file.size) {
+          addToast(
+            `Compressed ${formatBytes(file.size)} → ${formatBytes(uploadFile.size)}`,
+            "info"
+          );
+        }
+      }
+
+      setMediaBannerUploadLabel("Uploading…");
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+      formData.append("folder", "an_fitness/media-banner");
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+
+      setMediaBannerUrl(data.url);
+      setMediaBannerType(data.type === "audio" || isAudio ? "audio" : "video");
+      if (typeof data.width === "number") setMediaBannerWidth(data.width);
+      if (typeof data.height === "number") setMediaBannerHeight(data.height);
+      addToast("Uploaded. Turn on and Save to show on homepage.", "success");
+    } catch (err: any) {
+      addToast(err.message || "Upload failed. Please try again.", "error");
+    } finally {
+      setIsUploadingMediaBanner(false);
+      setMediaBannerUploadLabel("");
+    }
+  };
+
+  const handleSaveMediaBanner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (mediaBannerActive && !mediaBannerUrl) {
+      addToast("Add a file first.", "error");
+      return;
+    }
+
+    setIsSavingMediaBanner(true);
+    try {
+      const res = await fetch("/api/media-banner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mediaUrl: mediaBannerUrl,
+          mediaType: mediaBannerType,
+          active: mediaBannerActive,
+          expiresAt: mediaBannerExpiresAt
+            ? new Date(mediaBannerExpiresAt).toISOString()
+            : null,
+          width: mediaBannerWidth,
+          height: mediaBannerHeight,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save");
+
+      if (data.banner?.id) setMediaBannerId(data.banner.id);
+      addToast(mediaBannerActive ? "Saved — now live on homepage." : "Saved (hidden from visitors).", "success");
+    } catch (err: any) {
+      addToast(err.message || "Couldn't save.", "error");
+    } finally {
+      setIsSavingMediaBanner(false);
+    }
+  };
+
+  const handleClearMediaBanner = async () => {
+    if (!confirm("Remove this promo from the homepage?")) return;
+    setIsSavingMediaBanner(true);
+    try {
+      const res = await fetch("/api/media-banner", { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to remove");
+
+      setMediaBannerUrl("");
+      setMediaBannerActive(false);
+      setMediaBannerExpiresAt("");
+      setMediaBannerWidth(undefined);
+      setMediaBannerHeight(undefined);
+      setMediaBannerId("");
+      addToast("Promo removed.", "success");
+    } catch (err: any) {
+      addToast(err.message || "Couldn't remove.", "error");
+    } finally {
+      setIsSavingMediaBanner(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -871,6 +979,16 @@ export default function AdminDashboard() {
             Events
           </button>
           <button
+            onClick={() => setActiveTab("banner")}
+            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${activeTab === "banner"
+              ? "bg-brandRed text-white shadow-lg shadow-brandRed/20"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
+              }`}
+          >
+            <Video size={16} />
+            Home Promo
+          </button>
+          <button
             onClick={() => setActiveTab("settings")}
             className={`w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer ${activeTab === "settings"
               ? "bg-brandRed text-white shadow-lg shadow-brandRed/20"
@@ -941,12 +1059,14 @@ export default function AdminDashboard() {
               {activeTab === "offers" && "MANAGE SPECIAL OFFERS"}
               {activeTab === "memberships" && "MANAGE MEMBERSHIP PLANS"}
               {activeTab === "gallery" && "MANAGE GYM GALLERY"}
+              {activeTab === "banner" && "HOME PROMO"}
               {activeTab === "settings" && "SECURITY SETTINGS"}
             </h1>
             <p className="text-zinc-500 text-xs mt-1">
               {activeTab === "offers" && "Update homepage slider campaigns claimed via WhatsApp"}
               {activeTab === "memberships" && "Update pricing grid options shown on memberships page"}
               {activeTab === "gallery" && "Upload and delete photos in your gym gallery"}
+              {activeTab === "banner" && "Video/audio popup on the homepage"}
               {activeTab === "settings" && "Configure passwords and admin session boundaries"}
             </p>
           </div>
@@ -2464,6 +2584,143 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === "banner" && (
+            <div className="max-w-xl bg-zinc-900/10 border border-zinc-900 rounded-3xl p-6 sm:p-8 backdrop-blur-sm">
+              <h3 className="font-heading font-black text-lg text-white uppercase tracking-tight mb-1 flex items-center gap-3">
+                <Video className="text-brandRed" size={20} />
+                Home Promo
+              </h3>
+              <p className="text-zinc-500 text-xs mb-6">
+                Show a banner video or audio when someone opens the homepage
+              </p>
+
+              {isLoadingMediaBanner ? (
+                <div className="flex items-center gap-2 text-zinc-500 text-xs py-8 justify-center">
+                  <Loader2 size={16} className="animate-spin text-brandRed" />
+                  Loading...
+                </div>
+              ) : (
+                <form onSubmit={handleSaveMediaBanner} className="flex flex-col gap-5">
+                  {mediaBannerUrl ? (
+                    <div className="relative w-full rounded-2xl overflow-hidden border border-zinc-800 bg-black aspect-video flex items-center justify-center">
+                      {mediaBannerType === "audio" ? (
+                        <div className="flex flex-col items-center gap-3 p-6 w-full">
+                          <Music className="text-brandRed" size={28} />
+                          <audio src={mediaBannerUrl} controls className="w-full max-w-md" />
+                        </div>
+                      ) : (
+                        <video
+                          src={mediaBannerUrl}
+                          controls
+                          playsInline
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      )}
+                    </div>
+                  ) : null}
+
+                  <label className="flex items-center justify-center gap-2 w-full border border-dashed border-zinc-700 hover:border-brandRed bg-zinc-950/50 text-zinc-300 hover:text-white px-4 py-4 rounded-xl text-xs font-bold tracking-wide cursor-pointer transition-all">
+                    {isUploadingMediaBanner ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        {mediaBannerUploadLabel || "Working…"}
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={14} />
+                        {mediaBannerUrl ? "Replace file" : "Add video or audio"}
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="video/*,audio/*,.mp3,.wav,.m4a,.aac,.ogg,.mp4,.webm,.mov"
+                      className="sr-only"
+                      disabled={isUploadingMediaBanner || isSavingMediaBanner}
+                      onChange={handleMediaBannerUpload}
+                    />
+                  </label>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-mono font-black text-zinc-400 uppercase tracking-widest pl-1">
+                      End date (optional)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="datetime-local"
+                        value={mediaBannerExpiresAt}
+                        onChange={(e) => setMediaBannerExpiresAt(e.target.value)}
+                        className="flex-1 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-brandRed text-white px-4 py-3 rounded-xl text-xs outline-none transition-all"
+                        disabled={isSavingMediaBanner}
+                      />
+                      {mediaBannerExpiresAt && (
+                        <button
+                          type="button"
+                          onClick={() => setMediaBannerExpiresAt("")}
+                          className="text-xs text-zinc-400 hover:text-white px-3 border border-zinc-800 rounded-xl cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={mediaBannerActive}
+                      onChange={(e) => setMediaBannerActive(e.target.checked)}
+                      className="sr-only"
+                      disabled={isSavingMediaBanner}
+                    />
+                    <div
+                      className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                        mediaBannerActive ? "bg-brandRed border-brandRed" : "border-zinc-700 bg-zinc-950"
+                      }`}
+                    >
+                      {mediaBannerActive && (
+                        <svg className="w-2.5 h-2.5 text-white fill-current" viewBox="0 0 24 24">
+                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-xs font-bold text-zinc-300">Show on homepage</span>
+                  </label>
+
+                  <div className="flex gap-2 pt-1">
+                    {mediaBannerUrl && (
+                      <button
+                        type="button"
+                        onClick={handleClearMediaBanner}
+                        disabled={isSavingMediaBanner}
+                        className="flex items-center justify-center gap-2 border border-zinc-800 hover:border-brandRed text-zinc-400 hover:text-white font-bold text-xs px-4 py-3 rounded-xl cursor-pointer disabled:opacity-50"
+                      >
+                        <Trash2 size={14} />
+                        Remove
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={isSavingMediaBanner || isUploadingMediaBanner}
+                      className="flex-1 flex items-center justify-center gap-2 bg-brandRed hover:bg-brandRed-light disabled:bg-zinc-850 text-white font-black tracking-widest text-xs uppercase px-6 py-3 rounded-xl cursor-pointer"
+                    >
+                      {isSavingMediaBanner ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save size={14} />
+                          Save
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           )}
 

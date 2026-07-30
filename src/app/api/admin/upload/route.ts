@@ -14,6 +14,20 @@ async function checkAuth() {
   return !!session;
 }
 
+function resolveMediaType(
+  fileType: string,
+  fileName: string,
+  resourceType?: string
+): "image" | "video" | "audio" {
+  if (fileType.startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg|oga)$/i.test(fileName)) {
+    return "audio";
+  }
+  if (fileType.startsWith("video/") || resourceType === "video") {
+    return "video";
+  }
+  return "image";
+}
+
 export async function POST(request: Request) {
   if (!(await checkAuth())) {
     return unauthorizedError();
@@ -22,6 +36,7 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
+    const folderHint = (formData.get("folder") as string | null) || "";
 
     if (!file) {
       return validationError("Please choose a file to upload.");
@@ -30,24 +45,35 @@ export async function POST(request: Request) {
     const fileType = file.type.toLowerCase();
     const isImage = fileType.startsWith("image/");
     const isVideo = fileType.startsWith("video/");
+    const isAudio = fileType.startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg|oga)$/i.test(file.name);
 
-    if (!isImage && !isVideo) {
-      return validationError("Please upload an image (JPEG, PNG, WEBP, GIF) or video (MP4, WEBM, MOV).");
+    if (!isImage && !isVideo && !isAudio) {
+      return validationError(
+        "Please upload an image (JPEG, PNG, WEBP, GIF), video (MP4, WEBM, MOV), or audio (MP3, WAV, M4A, OGG, AAC)."
+      );
     }
+
+    const folder = folderHint.trim() || "an_fitness/gallery";
 
     if (isCloudinaryConfigured()) {
       try {
         const result = await uploadToCloudinary(file, file.name, {
-          folder: "an_fitness/gallery",
-          resourceType: isVideo ? "video" : isImage ? "image" : "auto",
+          folder,
+          
+          resourceType: isAudio || isVideo ? "video" : isImage ? "image" : "auto",
         });
+
+        const type = resolveMediaType(fileType, file.name, result.resource_type);
 
         return NextResponse.json({
           success: true,
           url: result.url,
           key: result.key,
           resource_type: result.resource_type,
-          type: isVideo || result.resource_type === "video" ? "video" : "image",
+          type,
+          width: result.width,
+          height: result.height,
+          duration: result.duration,
           provider: "cloudinary",
         });
       } catch (cloudinaryErr) {
@@ -82,7 +108,8 @@ export async function POST(request: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
 
-    const extension = file.name.split(".").pop() || (isVideo ? "mp4" : "webp");
+    const extension =
+      file.name.split(".").pop() || (isAudio ? "mp3" : isVideo ? "mp4" : "webp");
     const key = `gallery-${crypto.randomUUID()}.${extension}`;
 
     const r2 = getR2();
@@ -99,7 +126,7 @@ export async function POST(request: Request) {
       success: true,
       url: publicUrl,
       key: key,
-      type: isVideo ? "video" : "image",
+      type: isAudio ? "audio" : isVideo ? "video" : "image",
       provider: "r2",
     });
   } catch (err) {

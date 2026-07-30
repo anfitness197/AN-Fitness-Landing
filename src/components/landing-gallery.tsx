@@ -21,10 +21,43 @@ export const LandingGallery: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadGallery() {
+      try {
+        const cached = sessionStorage.getItem(GALLERY_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (
+            Date.now() - parsed.timestamp < GALLERY_CACHE_TTL &&
+            Array.isArray(parsed.data)
+          ) {
+            if (!cancelled) {
+              setPhotos(parsed.data);
+              setLoading(false);
+            }
+            
+            const res = await fetch("/api/gallery?limit=12");
+            const fresh = await res.json();
+            if (cancelled) return;
+            if (res.ok && Array.isArray(fresh)) {
+              setPhotos(fresh);
+              try {
+                sessionStorage.setItem(
+                  GALLERY_CACHE_KEY,
+                  JSON.stringify({ data: fresh, timestamp: Date.now() })
+                );
+              } catch {}
+            }
+            return;
+          }
+        }
+      } catch {}
+
       try {
         const res = await fetch("/api/gallery?limit=12");
         const data = await res.json();
+        if (cancelled) return;
         if (res.ok && Array.isArray(data)) {
           setPhotos(data);
           try {
@@ -38,12 +71,16 @@ export const LandingGallery: React.FC = () => {
         }
       } catch (err) {
         console.error("Failed to fetch gallery photos:", err);
-        setPhotos([]);
+        if (!cancelled) setPhotos([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
+
     loadGallery();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (

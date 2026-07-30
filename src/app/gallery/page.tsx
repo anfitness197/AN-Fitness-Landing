@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, X, Maximize2, Minimize2, Loader2, ImageOff, Play } from "lucide-react";
-import { getMediaThumbnail, isVideoUrl } from "@/lib/cloudinary";
+import { getMediaThumbnail, isVideoUrl, optimizeMediaUrl } from "@/lib/cloudinary";
 import { BackLink } from "@/components/back-link";
 import { PageLoading } from "@/components/page-loading";
 import { EmptyState } from "@/components/empty-state";
@@ -30,6 +30,20 @@ const GALLERY_CACHE_TTL = 5 * 60 * 1000;
 const GalleryImage: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className = "" }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const optimized = optimizeMediaUrl(src, 800);
+
+  useEffect(() => {
+    setLoaded(false);
+    setError(false);
+  }, [optimized]);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img?.complete && img.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, [optimized]);
 
   return (
     <div className="relative w-full h-full bg-zinc-900 overflow-hidden">
@@ -44,11 +58,13 @@ const GalleryImage: React.FC<{ src: string; alt: string; className?: string }> =
           <span className="text-[9px] text-zinc-600 font-mono uppercase tracking-wider">Image Unavailable</span>
         </div>
       ) : (
-        
         <img
-          src={src}
+          ref={imgRef}
+          src={optimized}
           alt={alt}
           loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
           className={`${className} object-cover w-full h-full transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}

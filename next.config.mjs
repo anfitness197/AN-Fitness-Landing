@@ -19,10 +19,13 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "i.ibb.co" },
+      { protocol: "https", hostname: "ibb.co" },
+      { protocol: "https", hostname: "*.ibb.co" },
       { protocol: "https", hostname: "*.imgbb.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "*.cloudinary.com" },
-      { protocol: "https", hostname: "*.supabase.co flex" },
+      { protocol: "https", hostname: "*.supabase.co" },
     ],
   },
   experimental: {

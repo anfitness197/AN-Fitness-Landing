@@ -22,9 +22,16 @@ export function isCloudinaryConfigured(): boolean {
   return !!(cloudName && ((apiKey && apiSecret) || uploadPreset));
 }
 
+export function isAudioUrl(url: string, type?: string): boolean {
+  if (!url) return false;
+  if (type === "audio") return true;
+  return /\.(mp3|wav|m4a|aac|oga)(\?.*)?$/i.test(url);
+}
+
 export function isVideoUrl(url: string, type?: string): boolean {
   if (!url) return false;
   if (type === "video") return true;
+  if (isAudioUrl(url, type)) return false;
   return (
     /\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i.test(url) ||
     url.includes("/video/upload/") ||
@@ -37,9 +44,36 @@ export function getMediaThumbnail(url: string, type?: string): string {
   if (isVideoUrl(url, type)) {
     if (url.includes("cloudinary.com") && url.includes("/video/upload/")) {
       return url
-        .replace("/video/upload/", "/video/upload/so_0,f_jpg,w_800/")
+        .replace("/video/upload/", "/video/upload/so_0,f_jpg,q_auto,w_800/")
         .replace(/\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i, ".jpg");
     }
+  }
+  return optimizeMediaUrl(url, 800);
+}
+
+export function optimizeMediaUrl(url: string, width = 800): string {
+  if (!url || !url.includes("cloudinary.com") || !url.includes("/upload/")) {
+    return url;
+  }
+
+  const insert = (kind: "image" | "video", transforms: string) => {
+    const marker = `/${kind}/upload/`;
+    const idx = url.indexOf(marker);
+    if (idx === -1) return url;
+    const after = url.slice(idx + marker.length);
+    
+    const firstSeg = after.split("/")[0] || "";
+    if (/^(f_|q_|w_|h_|c_|so_|e_|fl_|b_|ar_)/.test(firstSeg) || firstSeg.includes(",")) {
+      return url;
+    }
+    return url.slice(0, idx + marker.length) + transforms + "/" + after;
+  };
+
+  if (url.includes("/image/upload/")) {
+    return insert("image", `f_auto,q_auto,c_limit,w_${width}`);
+  }
+  if (url.includes("/video/upload/") && !isVideoUrl(url)) {
+    return insert("video", `f_auto,q_auto,c_limit,w_${width}`);
   }
   return url;
 }

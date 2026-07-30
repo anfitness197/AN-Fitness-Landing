@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeatureItem {
   title: string;
@@ -33,23 +33,39 @@ const FEATURES_DATA: FeatureItem[] = [
 
 const FeatureImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img?.complete && img.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, [src]);
 
   return (
     <div className="relative w-full h-full">
-      {!loaded && (
+      {!loaded && !error && (
         <div className="absolute inset-0 bg-zinc-900 animate-shimmer" />
       )}
-
-      <img
-        src={src}
-        alt={alt}
-        className={`w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-105 ${
-          loaded ? "opacity-100" : "opacity-0"
-        }`}
-        draggable={false}
-        loading="lazy"
-        onLoad={() => setLoaded(true)}
-      />
+      {error ? (
+        <div className="absolute inset-0 bg-zinc-900" />
+      ) : (
+        <img
+          ref={imgRef}
+          src={src}
+          alt={alt}
+          className={`w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-105 ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+          draggable={false}
+          loading="eager"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+        />
+      )}
     </div>
   );
 };

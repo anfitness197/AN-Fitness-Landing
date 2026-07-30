@@ -10,6 +10,7 @@ import { OffersCarousel } from "@/components/offers-carousel";
 import { ReviewsMarquee } from "@/components/reviews-marquee";
 import { LandingGallery } from "@/components/landing-gallery";
 import HeroVideo from "@/components/hero-video";
+import { MediaBanner } from "@/components/media-banner";
 import { MapPin, Navigation } from "lucide-react";
 import { WHATSAPP_URL, MAPS_URL } from "@/lib/contact";
 
@@ -38,6 +39,7 @@ const homeSections = [
 export default function Home() {
   return (
     <div className="relative min-h-screen bg-zinc-950">
+      <MediaBanner />
       <section id="hero" className="relative h-[85vh] sm:h-[90vh] md:h-screen w-full flex items-center justify-center overflow-hidden">
         <HeroVideo />
 
