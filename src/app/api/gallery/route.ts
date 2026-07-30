@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getDB, getR2 } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
+import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
+import { jsonCached } from "@/lib/http-cache";
 
 export const runtime = "edge";
 
@@ -77,15 +79,15 @@ export async function GET(request: Request) {
           : "image"),
     }));
 
-    return NextResponse.json(items);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to fetch gallery items" }, { status: 500 });
+    return jsonCached(items, 60);
+  } catch (err) {
+    return apiError(err, 500, "Couldn't load gallery. Please try again.");
   }
 }
 
 export async function POST(request: Request) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   try {
@@ -93,7 +95,7 @@ export async function POST(request: Request) {
     const { id, url, category, title, type } = body;
 
     if (!id || !url || !category) {
-      return NextResponse.json({ error: "id, url, and category are required" }, { status: 400 });
+      return validationError("Please provide an image, category, and title.");
     }
 
     const itemType =
@@ -120,14 +122,14 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to create gallery item" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't save gallery item. Please try again.");
   }
 }
 
 export async function DELETE(request: Request) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   try {
@@ -135,14 +137,14 @@ export async function DELETE(request: Request) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ error: "id query parameter is required" }, { status: 400 });
+      return validationError("Please select an item to delete.");
     }
 
     const db = getDB();
     await db.prepare("DELETE FROM gallery WHERE id = ?").bind(id).run();
 
     return NextResponse.json({ success: true, message: "Gallery item deleted successfully" });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to delete gallery item" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't delete gallery item. Please try again.");
   }
 }

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { Instagram, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RainbowButton } from "./ui/rainbow-button";
+import { WHATSAPP_URL } from "@/lib/contact";
 
 interface NavItem {
   heading: string;
@@ -58,7 +59,7 @@ const CustomFooter: React.FC = () => {
         href="https://instagram.com/an_fitness2025"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-2 hover:text-red-500 transition-colors group font-mono text-[10px] sm:text-xs uppercase tracking-[0.25em]"
+        className="flex items-center gap-2 hover:text-brandRed transition-colors group font-mono text-xs uppercase tracking-[0.25em]"
       >
         <Instagram size={18} className="group-hover:scale-110 transition-transform" />
         <span>@an_fitness2025</span>
@@ -108,7 +109,7 @@ const NavLink: React.FC<NavLinkProps> = ({
     >
       <Link ref={ref} onMouseMove={handleMouseMove} href={href} className="w-full flex items-center justify-between">
         <div className="relative flex items-center">
-          <span className="text-zinc-600 transition-colors duration-500 group-hover:text-red-500 text-xl sm:text-2xl font-light mr-3 sm:mr-4 font-mono">
+          <span className="text-zinc-600 transition-colors duration-500 group-hover:text-brandRed text-xl sm:text-2xl font-light mr-3 sm:mr-4 font-mono">
             0{index}.
           </span>
           <div className="flex flex-col">
@@ -124,7 +125,7 @@ const NavLink: React.FC<NavLinkProps> = ({
               }}
               className={cn(
                 "relative z-10 block text-2xl sm:text-3xl md:text-4xl font-black transition-colors duration-300",
-                isActivePage ? "text-red-500" : "text-white group-hover:text-red-500"
+                isActivePage ? "text-brandRed" : "text-white group-hover:text-brandRed"
               )}
             >
               {heading}
@@ -135,7 +136,7 @@ const NavLink: React.FC<NavLinkProps> = ({
         {isActivePage && (
           <motion.div
             layoutId="activeIndicator"
-            className="w-2.5 h-2.5 bg-red-600 rounded-full mr-2"
+            className="w-2.5 h-2.5 bg-brandRed rounded-full mr-2"
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />
         )}
@@ -261,7 +262,7 @@ export const Navbar: React.FC = () => {
               className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(214,26,31,0.5)]"
             />
           </div>
-          <span className="font-black text-sm sm:text-base md:text-lg tracking-[0.15em] sm:tracking-[0.2em] text-white uppercase group-hover:text-red-500 transition-colors">
+          <span className="font-black text-sm sm:text-base md:text-lg tracking-[0.15em] sm:tracking-[0.2em] text-white uppercase group-hover:text-brandRed transition-colors">
             AN FITNESS
           </span>
         </Link>
@@ -269,26 +270,24 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
           <Link
             href="/events"
-            className="relative p-2 sm:p-2.5 rounded-full bg-zinc-900/90 border border-zinc-800 hover:border-red-600 hover:bg-zinc-900 text-zinc-300 transition-all flex items-center justify-center group cursor-pointer"
-            title="Latest Notifications & Events"
-            aria-label="View Latest Notifications & Events"
+            className="relative p-2 sm:p-2.5 rounded-full bg-zinc-900/90 border border-zinc-800 hover:border-brandRed hover:bg-zinc-900 text-zinc-300 transition-all flex items-center justify-center group cursor-pointer"
+            title="News & events"
+            aria-label="View news and events"
           >
-            <Bell size={18} className="group-hover:scale-110 transition-transform text-zinc-300 group-hover:text-red-500" />
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-600 border border-zinc-950" />
+            <Bell size={18} className="group-hover:scale-110 transition-transform text-zinc-300 group-hover:text-brandRed" />
           </Link>
 
-          <Link href="/#offers">
-            <RainbowButton as="span" className="px-3 py-1.5 sm:px-4 md:px-6 md:py-2 text-[9px] sm:text-[10px] md:text-xs">
-              Join Now
+          <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+            <RainbowButton as="span" className="px-3 py-1.5 sm:px-4 md:px-6 md:py-2 text-[11px] sm:text-xs">
+              Join on WhatsApp
             </RainbowButton>
-          </Link>
+          </a>
 
           <button
             onClick={handleClick}
             className={cn(
-              "relative z-[110] w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center cursor-pointer border border-zinc-800 transition-colors hover:border-red-600",
-              isActive ? "bg-red-600 border-transparent text-white" : "bg-zinc-900 text-zinc-100"
+              "relative z-[110] w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center cursor-pointer border border-zinc-800 transition-colors hover:border-brandRed",
+              isActive ? "bg-brandRed border-transparent text-white" : "bg-zinc-900 text-zinc-100"
             )}
             aria-label="Toggle Navigation Menu"
           >

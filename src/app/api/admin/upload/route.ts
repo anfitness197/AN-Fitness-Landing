@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getR2 } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
 import { isCloudinaryConfigured, uploadToCloudinary } from "@/lib/cloudinary";
+import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
 
 export const runtime = "edge";
 
@@ -15,7 +16,7 @@ async function checkAuth() {
 
 export async function POST(request: Request) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   try {
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
     const file = formData.get("file") as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+      return validationError("Please choose a file to upload.");
     }
 
     const fileType = file.type.toLowerCase();
@@ -31,13 +32,9 @@ export async function POST(request: Request) {
     const isVideo = fileType.startsWith("video/");
 
     if (!isImage && !isVideo) {
-      return NextResponse.json(
-        { error: "Only image (JPEG, PNG, WEBP, GIF) and video (MP4, WEBM, MOV) files are allowed" },
-        { status: 400 }
-      );
+      return validationError("Please upload an image (JPEG, PNG, WEBP, GIF) or video (MP4, WEBM, MOV).");
     }
 
-    // 1. Try Cloudinary first (supports both Images & Videos)
     if (isCloudinaryConfigured()) {
       try {
         const result = await uploadToCloudinary(file, file.name, {
@@ -53,12 +50,11 @@ export async function POST(request: Request) {
           type: isVideo || result.resource_type === "video" ? "video" : "image",
           provider: "cloudinary",
         });
-      } catch (cloudinaryErr: any) {
+      } catch (cloudinaryErr) {
         console.error("Cloudinary upload failed, attempting fallback:", cloudinaryErr);
       }
     }
 
-    // 2. Fallback for Images to IMGBB (if available)
     const imgbbApiKey = process.env.IMGBB_API_KEY || process.env.NEXT_PUBLIC_IMGBB_API_KEY;
     if (isImage && imgbbApiKey) {
       const imgbbFormData = new FormData();
@@ -83,7 +79,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. Fallback to Cloudflare R2
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
 
@@ -107,7 +102,7 @@ export async function POST(request: Request) {
       type: isVideo ? "video" : "image",
       provider: "r2",
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to upload file" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't upload file. Please try again.");
   }
 }

@@ -38,16 +38,16 @@ export default function NotFound() {
 
       <div className="relative z-10 text-center max-w-md mt-4 sm:mt-6 flex flex-col items-center gap-3 sm:gap-4">
         <h1 className="font-heading font-black text-lg sm:text-xl md:text-2xl text-white uppercase tracking-wider">
-          LOOKS LIKE YOU OUT-LIFTED THIS ROUTE
+          Page not found
         </h1>
-        <p className="text-zinc-500 text-[10px] sm:text-xs md:text-sm font-light leading-relaxed">
-          The page you are looking for has been moved, removed, Go to Home Page.
+        <p className="text-zinc-500 text-xs sm:text-sm font-light leading-relaxed">
+          Looks like this page moved or no longer exists. Head back home and keep training.
         </p>
 
         <div className="mt-4 sm:mt-6">
           <Link href="/">
-            <RainbowButton className="px-6 sm:px-8 py-2.5 sm:py-3 text-[10px] sm:text-xs font-bold tracking-widest uppercase">
-              RETURN TO HOME PAGE
+            <RainbowButton className="px-6 sm:px-8 py-2.5 sm:py-3 text-xs sm:text-sm font-bold tracking-widest uppercase">
+              Return to home
             </RainbowButton>
           </Link>
         </div>

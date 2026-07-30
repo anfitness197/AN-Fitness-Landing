@@ -11,15 +11,16 @@ import { ReviewsMarquee } from "@/components/reviews-marquee";
 import { LandingGallery } from "@/components/landing-gallery";
 import HeroVideo from "@/components/hero-video";
 import { MapPin, Navigation } from "lucide-react";
+import { WHATSAPP_URL, MAPS_URL } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "AN Fitness | Best Gym & Training Club | Khordha",
   description:
-    "Forge your steel at AN Fitness, Khordha's premier best gym. State-of-the-art strength decks, personal coaching, Zumba classes, and certified coaches.",
+    "Forge your steel at AN Fitness, Khordha's premier gym. State-of-the-art strength training, personal coaching, Zumba classes, and certified coaches.",
   openGraph: {
     title: "AN Fitness | Best Gym & Training Club | Khordha",
     description:
-      "Forge your steel at AN Fitness, Khordha's premier best gym. State-of-the-art strength decks, personal coaching, Zumba classes, and certified coaches.",
+      "Forge your steel at AN Fitness, Khordha's premier gym. State-of-the-art strength training, personal coaching, Zumba classes, and certified coaches.",
   },
   alternates: {
     canonical: "/",
@@ -27,11 +28,10 @@ export const metadata: Metadata = {
 };
 
 const homeSections = [
-  { label: "Hero", href: "#hero" },
   { label: "Founder", href: "#founder" },
-  { label: "Features", href: "#features" },
+  { label: "Why us", href: "#features" },
   { label: "Gallery", href: "#gallery" },
-  { label: "Limited Offers", href: "#offers" },
+  { label: "Offers", href: "#offers" },
   { label: "Reviews", href: "#testimonials" },
 ];
 
@@ -56,25 +56,25 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col items-center gap-3 sm:gap-4 mt-6 sm:mt-8 w-full max-w-md mx-auto">
-            <Link href="#offers" className="w-full sm:w-auto">
-              <RainbowButton as="span" className="w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-3.5 text-[10px] sm:text-xs md:text-sm font-black tracking-widest uppercase">
-                START TRAINING
+            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+              <RainbowButton as="span" className="w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-3.5 text-xs sm:text-sm font-black tracking-widest uppercase">
+                Join on WhatsApp
               </RainbowButton>
-            </Link>
+            </a>
 
             <div className="flex flex-row items-center justify-center gap-2.5 sm:gap-4 w-full">
-              <Link href="#features" className="flex-1 sm:flex-initial inline-flex items-center justify-center border border-zinc-800 hover:border-brandRed bg-zinc-950/80 hover:bg-zinc-900/50 backdrop-blur-sm text-white px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap">
-                EXPLORE
+              <Link href="/memberships" className="flex-1 sm:flex-initial inline-flex items-center justify-center border border-zinc-800 hover:border-brandRed bg-zinc-950/80 hover:bg-zinc-900/50 backdrop-blur-sm text-white px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full text-xs sm:text-sm font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap">
+                View plans
               </Link>
-              <Link href="/contact" className="flex-1 sm:flex-initial inline-flex items-center justify-center border border-zinc-800 hover:border-brandRed bg-zinc-950/80 hover:bg-zinc-900/50 backdrop-blur-sm text-white hover:text-white px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap">
-                CONTACT
+              <Link href="/contact" className="flex-1 sm:flex-initial inline-flex items-center justify-center border border-zinc-800 hover:border-brandRed bg-zinc-950/80 hover:bg-zinc-900/50 backdrop-blur-sm text-white hover:text-white px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full text-xs sm:text-sm font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap">
+                Contact
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      <SectionHeader title="THE WORK" links={homeSections} />
+      <SectionHeader title="On this page" links={homeSections} />
 
       <section id="founder" className="py-16 sm:py-24 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto scroll-mt-24 border-b border-zinc-900/50">
         <div className="flex flex-col lg:flex-row items-center gap-8 sm:gap-12 lg:gap-16">
@@ -141,10 +141,10 @@ export default function Home() {
         <div className="text-center max-w-2xl mx-auto px-4 sm:px-6">
           <span className="text-[10px] sm:text-xs uppercase tracking-[0.3em] font-black text-brandRed">THE CLUB</span>
           <h2 className="font-heading font-black text-2xl sm:text-3xl md:text-5xl text-white uppercase mt-2">
-            LATEST FROM TRAINING DECK
+            LATEST FROM THE GYM FLOOR
           </h2>
           <p className="text-zinc-500 text-xs sm:text-sm md:text-base mt-3 sm:mt-4 font-light">
-            Check out real training moments, premium facility setups, and heavy lifting decks.
+            Real training moments, facility setups, and strength sessions from AN Fitness.
           </p>
         </div>
         <LandingGallery />
@@ -187,9 +187,9 @@ export default function Home() {
             Join AN Fitness now to get access to top-quality gym facilities, professional training, and a supportive community.
           </p>
           <div className="mt-3 sm:mt-4">
-            <Link href="#offers">
+            <Link href="/memberships">
               <RainbowButton as="span" className="px-8 sm:px-10 py-3 sm:py-4 text-xs sm:text-base font-bold tracking-widest shadow-2xl">
-                JOIN AN FITNESS NOW
+                View plans
               </RainbowButton>
             </Link>
           </div>
@@ -200,8 +200,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex flex-col gap-8 sm:gap-12">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div className="flex flex-col gap-3">
-              <span className="text-[9px] sm:text-[10px] text-brandRed font-black uppercase tracking-[0.3em] font-mono bg-brandRed/10 px-3 py-1 rounded self-start">
-                VISIT THE ARENA
+              <span className="text-[11px] sm:text-xs text-brandRed font-black uppercase tracking-[0.3em] font-mono bg-brandRed/10 px-3 py-1 rounded self-start">
+                Visit us
               </span>
               <h2 className="font-heading font-black text-2xl sm:text-4xl md:text-5xl uppercase tracking-tight text-white">
                 FIND AN FITNESS IN KHORDHA
@@ -211,7 +211,7 @@ export default function Home() {
               </p>
             </div>
             <a
-              href="https://maps.app.goo.gl/u3QoCsbmTL7Q6awK6"
+              href={MAPS_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-brandRed text-white px-5 py-3 rounded-full text-xs font-mono uppercase tracking-widest transition-all duration-300 group shadow-lg shrink-0"
@@ -243,13 +243,13 @@ export default function Home() {
                     <MapPin size={18} className="text-brandRed" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">FACILITY ADDRESS</span>
+                    <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-widest">Address</span>
                     <span className="text-sm font-bold text-white mt-0.5">Palla Main Road, Palla, Khordha, Odisha 752056</span>
                   </div>
                 </div>
 
                 <div className="border-t border-zinc-800/60 pt-4 flex flex-col gap-3">
-                  <span className="text-[10px] font-mono text-brandRed uppercase font-black tracking-widest">WORKOUT HOURS</span>
+                  <span className="text-[11px] font-mono text-brandRed uppercase font-black tracking-widest">Opening hours</span>
                   <div className="flex justify-between text-xs border-b border-zinc-800/40 pb-2">
                     <span className="text-zinc-400">Monday - Saturday:</span>
                     <span className="font-mono text-white text-right">5:00 AM - 12:00 PM<br />4:00 PM - 10:30 PM</span>
@@ -262,8 +262,8 @@ export default function Home() {
               </div>
 
               <div className="border-t border-zinc-800/60 pt-4">
-                <Link href="/contact" className="w-full flex items-center justify-center gap-2 bg-brandRed hover:bg-red-700 text-white font-bold text-xs uppercase tracking-widest py-3.5 rounded-xl transition-colors shadow-lg shadow-brandRed/20">
-                  CONTACT GYM DESK
+                <Link href="/contact" className="w-full flex items-center justify-center gap-2 bg-brandRed hover:bg-brandRed-light text-white font-bold text-xs uppercase tracking-widest py-3.5 rounded-xl transition-colors shadow-lg shadow-brandRed/20">
+                  Contact us
                 </Link>
               </div>
             </div>
@@ -277,7 +277,7 @@ export default function Home() {
             <div className="flex flex-col items-center md:items-start gap-2">
               <span className="font-heading font-black tracking-widest text-white uppercase text-sm sm:text-base">AN FITNESS</span>
               <a
-                href="https://maps.app.goo.gl/u3QoCsbmTL7Q6awK6"
+                href={MAPS_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-brandRed transition-colors text-center md:text-left"
@@ -290,9 +290,10 @@ export default function Home() {
                 Sun: 6:00 AM - 10:00 AM
               </div>
             </div>
-            <div className="flex flex-wrap justify-center gap-4 sm:gap-6 font-bold uppercase tracking-wider text-[9px] sm:text-[10px] md:text-xs">
+            <div className="flex flex-wrap justify-center gap-4 sm:gap-6 font-bold uppercase tracking-wider text-xs md:text-sm">
               <Link href="/memberships" className="hover:text-white transition-colors">Memberships</Link>
               <Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link>
+              <Link href="/events" className="hover:text-white transition-colors">Events</Link>
               <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
             </div>
             <div className="text-[9px] sm:text-[10px] text-zinc-600">

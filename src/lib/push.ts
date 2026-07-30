@@ -1,5 +1,6 @@
 import { SignJWT, importJWK } from "jose";
 import { getDB, D1Database } from "@/lib/db";
+import { absoluteUrl, getPushBadgeUrl, getPushIconUrl } from "@/lib/site";
 
 export function bufferToUrlBase64(buf: Uint8Array): string {
   let bin = "";
@@ -260,8 +261,15 @@ export async function sendWebPushNotification(
   vapid: VapidKeys
 ): Promise<{ success: boolean; statusCode: number; error?: string }> {
   try {
+    const safePayload: PushPayload = {
+      ...payload,
+      icon: payload.icon ? absoluteUrl(payload.icon) : getPushIconUrl(),
+      badge: payload.badge ? absoluteUrl(payload.badge) : getPushBadgeUrl(),
+      image: payload.image ? absoluteUrl(payload.image) : undefined,
+    };
+
     const vapidHeaders = await createVapidHeaders(subscription.endpoint, vapid);
-    const body = await encryptPayload(JSON.stringify(payload), subscription.keys);
+    const body = await encryptPayload(JSON.stringify(safePayload), subscription.keys);
 
     let res = await fetch(subscription.endpoint, {
       method: "POST",
@@ -321,6 +329,15 @@ export async function broadcastPushNotification(
 ): Promise<{ sent: number; failed: number; total: number; errors?: string[] }> {
   const vapidKeys = await getOrInitVapidKeys(db);
 
+  
+  const normalizedPayload: PushPayload = {
+    ...payload,
+    icon: payload.icon ? absoluteUrl(payload.icon) : getPushIconUrl(),
+    badge: payload.badge ? absoluteUrl(payload.badge) : getPushBadgeUrl(),
+    image: payload.image ? absoluteUrl(payload.image) : undefined,
+    url: payload.url || "/events",
+  };
+
   let subscriptions: PushSubscriptionData[] = [];
   try {
     const { results } = await db
@@ -340,28 +357,42 @@ export async function broadcastPushNotification(
     return { sent: 0, failed: 0, total: 0, errors: ["Database query failed"] };
   }
 
+  if (subscriptions.length === 0) {
+    return { sent: 0, failed: 0, total: 0 };
+  }
+
+  
+  const BATCH = 20;
   let sent = 0;
   let failed = 0;
   const expiredEndpoints: string[] = [];
   const errors: string[] = [];
 
-  for (const sub of subscriptions) {
-    const res = await sendWebPushNotification(sub, payload, vapidKeys);
-    if (res.success) {
-      sent++;
-    } else {
-      failed++;
-      if (res.error) errors.push(res.error);
-      if (res.statusCode === 404 || res.statusCode === 410) {
-        expiredEndpoints.push(sub.endpoint);
+  for (let i = 0; i < subscriptions.length; i += BATCH) {
+    const batch = subscriptions.slice(i, i + BATCH);
+    const results = await Promise.all(
+      batch.map((sub) => sendWebPushNotification(sub, normalizedPayload, vapidKeys))
+    );
+
+    results.forEach((res, idx) => {
+      if (res.success) {
+        sent++;
+      } else {
+        failed++;
+        if (res.error) errors.push(res.error);
+        if (res.statusCode === 404 || res.statusCode === 410) {
+          expiredEndpoints.push(batch[idx].endpoint);
+        }
       }
-    }
+    });
   }
 
   if (expiredEndpoints.length > 0) {
-    for (const ep of expiredEndpoints) {
-      await db.prepare("DELETE FROM push_subscriptions WHERE endpoint = ?").bind(ep).run().catch(() => {});
-    }
+    await Promise.all(
+      expiredEndpoints.map((ep) =>
+        db.prepare("DELETE FROM push_subscriptions WHERE endpoint = ?").bind(ep).run().catch(() => {})
+      )
+    );
   }
 
   return { sent, failed, total: subscriptions.length, errors: errors.length > 0 ? errors : undefined };

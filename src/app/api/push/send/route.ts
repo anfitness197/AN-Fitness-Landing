@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { getDB } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
 import { broadcastPushNotification, getOrInitVapidKeys } from "@/lib/push";
+import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
+import { getPushIconUrl, absoluteUrl } from "@/lib/site";
 
 export const runtime = "edge";
 
@@ -15,7 +17,7 @@ async function checkAuth() {
 
 export async function GET() {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   try {
@@ -30,14 +32,14 @@ export async function GET() {
       vapidPublicKey: vapid.publicKey,
       vapidSubject: vapid.subject,
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to fetch push status" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't load alert status. Please try again.");
   }
 }
 
 export async function POST(request: Request) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   try {
@@ -48,16 +50,12 @@ export async function POST(request: Request) {
     const cleanBody = (message || bodyText || "").toString().trim();
 
     if (!cleanTitle || !cleanBody) {
-      return NextResponse.json(
-        { error: "Title and message content are required for push notifications" },
-        { status: 400 }
-      );
+      return validationError("Please enter a title and message.");
     }
 
     const itemType = type === "event" ? "event" : "notification";
     const db = getDB();
 
-    
     if (saveToBulletin) {
       const eventId = `${itemType}-${Date.now()}`;
 
@@ -99,29 +97,30 @@ export async function POST(request: Request) {
       }
     }
 
-    
     const result = await broadcastPushNotification(db, {
       title: itemType === "notification" ? `📢 ${cleanTitle}` : `🏋️ ${cleanTitle}`,
       body: cleanBody.length > 120 ? `${cleanBody.substring(0, 117)}...` : cleanBody,
-      icon: "/assets/logos/web-app-manifest-192x192.png",
-      image: (image || "").toString().trim() || undefined,
+      icon: getPushIconUrl(),
+      image: (image || "").toString().trim() ? absoluteUrl((image || "").toString().trim()) : undefined,
       url: (url || "/events").toString().trim(),
       type: itemType,
     });
 
-    let msg = `Post published & push broadcast sent to ${result.sent} active subscriber(s)!`;
+    let msg = `Posted and sent to ${result.sent} subscriber(s).`;
     if (result.total === 0) {
-      msg = `Post published to Bulletin Board! (Note: 0 devices are subscribed to push alerts yet. Open /events on your device & click 'ENABLE PUSH ALERTS' to subscribe).`;
-    } else if (result.sent === 0 && result.errors?.length) {
-      msg = `Post published to Bulletin Board, but push delivery failed (${result.errors[0]}).`;
+      msg =
+        "Posted to News & events. No devices are subscribed yet — open Events on a phone and turn on alerts.";
+    } else if (result.sent === 0) {
+      console.error("Push delivery failed:", result.errors);
+      msg = "Posted to News & events, but alerts could not be delivered. Please try again later.";
     }
 
     return NextResponse.json({
       success: true,
       message: msg,
-      stats: result,
+      stats: { sent: result.sent, failed: result.failed, total: result.total },
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to broadcast notification" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't send alert. Please try again.");
   }
 }

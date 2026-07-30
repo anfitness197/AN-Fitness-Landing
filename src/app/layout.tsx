@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s | AN Fitness Khordha",
   },
   description:
-    "AN Fitness is recognized as the best gym in Khordha, Odisha. Featuring world-class heavy strength decks, personal coaching, Zumba classes, and premium facilities in Palla.",
+    "AN Fitness is recognized as the best gym in Khordha, Odisha. Featuring world-class strength training, personal coaching, Zumba classes, and premium facilities in Palla.",
   keywords: [
     "best gym in khordha",
     "best gym khordha",
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     siteName: "AN Fitness - Best Gym in Khordha",
     title: "AN Fitness | Best Gym in Khordha & Premier Training Club",
     description:
-      "Looking for the best gym in Khordha? AN Fitness delivers state-of-the-art strength decks, personal coaching, recovery zones, and Zumba classes.",
+      "Looking for the best gym in Khordha? AN Fitness delivers state-of-the-art strength training, personal coaching, recovery areas, and Zumba classes.",
     images: [
       {
         url: "/assets/logos/og-image.png",
@@ -110,7 +110,7 @@ const localBusinessSchema = {
   "@type": "HealthClub",
   name: "AN Fitness - Best Gym in Khordha",
   description:
-    "AN Fitness is the best gym in Khordha, offering state-of-the-art strength decks, personal coaching, Zumba classes, and premium workout equipment.",
+    "AN Fitness is the best gym in Khordha, offering state-of-the-art strength training, personal coaching, Zumba classes, and premium workout equipment.",
   url: siteUrl,
   telephone: "+919867195346",
   address: {
@@ -199,7 +199,7 @@ const faqSchema = {
       name: "What facilities are offered at AN Fitness Khordha?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "AN Fitness offers strength training, personal coaching, cardio deck, Zumba classes, recovery saunas, and custom workout programs."
+        text: "AN Fitness offers strength training, personal coaching, cardio equipment, Zumba classes, recovery saunas, and custom workout programs."
       }
     }
   ]

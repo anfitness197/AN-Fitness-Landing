@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getDB } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
+import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
 
 export const runtime = "edge";
 
@@ -14,7 +15,7 @@ async function checkAuth() {
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   const { id } = params;
@@ -24,7 +25,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const { name, price, billing, features, popular, badge } = body;
 
     if (!name || price === undefined) {
-      return NextResponse.json({ error: "name and price are required fields" }, { status: 400 });
+      return validationError("Please enter a plan name and price.");
     }
 
     const db = getDB();
@@ -44,14 +45,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       .run();
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to update membership" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't update membership plan. Please try again.");
   }
 }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   const { id } = params;
@@ -60,7 +61,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const db = getDB();
     await db.prepare("DELETE FROM memberships WHERE id = ?").bind(id).run();
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to delete membership" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't delete membership plan. Please try again.");
   }
 }

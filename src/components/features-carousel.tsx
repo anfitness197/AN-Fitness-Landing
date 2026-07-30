@@ -20,7 +20,7 @@ const FEATURES_DATA: FeatureItem[] = [
   {
     title: "STRENGTH & WORKOUT",
     subtitle: "HEAVY IRON TRAINING",
-    description: "Build raw power and endurance. Access our premium cages, squat racks, free weights, and modern lifting decks.",
+    description: "Build raw power and endurance. Access our premium cages, squat racks, free weights, and modern strength floor.",
     image: "/assets/images/workout.webp",
   },
   {
@@ -130,7 +130,7 @@ export const FeaturesCarousel: React.FC = () => {
                 <FeatureImage src={item.image} alt={item.title} />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/30 to-transparent" />
                 <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4">
-                  <span className="text-[9px] sm:text-[10px] bg-brandRed text-white px-2 sm:px-2.5 py-0.5 rounded font-black tracking-widest uppercase font-mono">
+                  <span className="text-[11px] sm:text-xs bg-brandRed text-white px-2 sm:px-2.5 py-0.5 rounded font-black tracking-widest uppercase font-mono">
                     {item.subtitle}
                   </span>
                 </div>
@@ -140,7 +140,7 @@ export const FeaturesCarousel: React.FC = () => {
                 <h3 className="font-heading font-black text-base sm:text-lg text-white uppercase tracking-wider">
                   {item.title}
                 </h3>
-                <p className="text-zinc-500 text-[10px] sm:text-xs mt-1 sm:mt-1.5 leading-relaxed font-light line-clamp-2">
+                <p className="text-zinc-500 text-xs sm:text-sm mt-1 sm:mt-1.5 leading-relaxed font-light line-clamp-2">
                   {item.description}
                 </p>
               </div>

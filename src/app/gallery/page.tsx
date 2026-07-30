@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { ChevronLeft, ChevronRight, X, Maximize2, Minimize2, Loader2, ImageOff, Play, Video, Camera } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Maximize2, Minimize2, Loader2, ImageOff, Play } from "lucide-react";
 import { getMediaThumbnail, isVideoUrl } from "@/lib/cloudinary";
+import { BackLink } from "@/components/back-link";
+import { PageLoading } from "@/components/page-loading";
+import { EmptyState } from "@/components/empty-state";
+import { LoadError } from "@/components/load-error";
 
 interface GalleryItem {
   id: string;
@@ -15,11 +17,11 @@ interface GalleryItem {
 }
 
 const CATEGORIES = [
-  { id: "all", label: "ALL MEDIA" },
-  { id: "videos", label: "🎥 VIDEOS" },
-  { id: "photos", label: "📷 PHOTOS" },
-  { id: "strength", label: "STRENGTH DECK" },
-  { id: "facility", label: "GYM FACILITY" },
+  { id: "all", label: "All" },
+  { id: "videos", label: "Videos" },
+  { id: "photos", label: "Photos" },
+  { id: "strength", label: "Strength floor" },
+  { id: "facility", label: "Gym facility" },
 ];
 
 const GALLERY_CACHE_KEY = "an_gallery_cache";
@@ -60,21 +62,29 @@ export default function GalleryPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [photos, setPhotos] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadGallery() {
+      setLoading(true);
+      setLoadError(false);
       try {
         const cached = sessionStorage.getItem(GALLERY_CACHE_KEY);
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Date.now() - parsed.timestamp < GALLERY_CACHE_TTL && Array.isArray(parsed.data)) {
-            setPhotos(parsed.data);
-            setLoading(false);
+            if (!cancelled) {
+              setPhotos(parsed.data);
+              setLoading(false);
+            }
 
             const res = await fetch("/api/gallery");
             const freshData = await res.json();
+            if (cancelled) return;
             if (res.ok && Array.isArray(freshData)) {
               setPhotos(freshData);
               sessionStorage.setItem(
@@ -90,6 +100,7 @@ export default function GalleryPage() {
       try {
         const res = await fetch("/api/gallery");
         const data = await res.json();
+        if (cancelled) return;
         if (res.ok && Array.isArray(data)) {
           setPhotos(data);
           try {
@@ -100,16 +111,23 @@ export default function GalleryPage() {
           } catch {}
         } else {
           setPhotos([]);
+          setLoadError(true);
         }
       } catch (err) {
         console.error("Failed to load gallery data:", err);
-        setPhotos([]);
+        if (!cancelled) {
+          setPhotos([]);
+          setLoadError(true);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     loadGallery();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [retryKey]);
 
   const filteredPhotos = photos.filter((photo) => {
     const isVideo = isVideoUrl(photo.url, photo.type);
@@ -194,21 +212,18 @@ export default function GalleryPage() {
 
       <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 flex-1 flex flex-col gap-6 sm:gap-10">
         <div className="self-start">
-          <Link href="/" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-[10px] sm:text-xs font-mono uppercase tracking-widest">
-            <ChevronLeft size={14} />
-            BACK TO DECK
-          </Link>
+          <BackLink />
         </div>
 
         <div className="text-left flex flex-col gap-2 sm:gap-3">
-          <span className="text-[9px] sm:text-[10px] text-brandRed font-mono font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] bg-brandRed/10 px-3 py-1 rounded self-start">
-            FACILITY PREVIEW
+          <span className="text-[11px] sm:text-xs text-brandRed font-mono font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] bg-brandRed/10 px-3 py-1 rounded self-start">
+            Inside the gym
           </span>
           <h1 className="font-heading font-black text-3xl sm:text-4xl md:text-6xl text-white uppercase tracking-tight leading-none">
-            THE AN CORE CATALOG
+            Gallery
           </h1>
           <p className="text-zinc-500 text-xs sm:text-sm md:text-base max-w-xl font-light">
-            Browse our raw workout deck layouts, combat training cages, clean recovery saunas, and custom facilities.
+            Browse our workout areas, training spaces, recovery saunas, and gym facilities.
           </p>
         </div>
 
@@ -217,7 +232,7 @@ export default function GalleryPage() {
             <button
               key={cat.id}
               onClick={() => handleCategoryChange(cat.id)}
-              className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-black tracking-widest uppercase transition-all duration-300 border cursor-pointer ${selectedCategory === cat.id
+              className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-black tracking-widest uppercase transition-all duration-300 border cursor-pointer ${selectedCategory === cat.id
                 ? "bg-brandRed border-brandRed text-white shadow-lg shadow-brandRed/20"
                 : "bg-zinc-900/30 border-zinc-800/80 text-zinc-400 hover:text-white hover:border-zinc-700"
                 }`}
@@ -228,15 +243,17 @@ export default function GalleryPage() {
         </div>
 
         {loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-16 sm:py-24 gap-4">
-            <Loader2 size={28} className="animate-spin text-brandRed" />
-            <span className="text-[10px] sm:text-xs uppercase tracking-widest font-mono text-zinc-600">Retrieving Asset Index...</span>
-          </div>
+          <PageLoading label="Loading photos..." />
+        ) : loadError ? (
+          <LoadError
+            message="We couldn't load the gallery. Please try again."
+            onRetry={() => setRetryKey((k) => k + 1)}
+          />
         ) : filteredPhotos.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-16 sm:py-20 text-center border border-zinc-900 rounded-2xl sm:rounded-3xl bg-zinc-900/5">
-            <span className="text-[10px] sm:text-xs uppercase tracking-widest font-mono text-zinc-500">No media uploaded in this zone yet</span>
-            <p className="text-zinc-650 text-[10px] sm:text-xs font-light mt-1">Check back later for high-definition visuals.</p>
-          </div>
+          <EmptyState
+            title="No photos in this category yet"
+            description="Check back later for new photos and videos."
+          />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {filteredPhotos.map((photo, index) => {

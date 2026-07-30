@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getDB } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
+import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
+import { jsonCached } from "@/lib/http-cache";
 
 export const runtime = "edge";
 
@@ -16,15 +18,15 @@ export async function GET() {
   try {
     const db = getDB();
     const { results } = await db.prepare("SELECT * FROM memberships").all();
-    return NextResponse.json(results || []);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to fetch memberships" }, { status: 500 });
+    return jsonCached(results || [], 60);
+  } catch (err) {
+    return apiError(err, 500, "Couldn't load membership plans. Please try again.");
   }
 }
 
 export async function POST(request: Request) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   try {
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
     const { id, name, price, billing, features, popular, badge } = body;
 
     if (!id || !name || price === undefined) {
-      return NextResponse.json({ error: "id, name, and price are required fields" }, { status: 400 });
+      return validationError("Please enter a plan name and price.");
     }
 
     const db = getDB();
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
       .run();
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to create membership" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't save membership plan. Please try again.");
   }
 }

@@ -54,7 +54,7 @@ export default function LoginPage() {
       router.push("/an-admin");
       router.refresh();
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
+      setError(err.message || "Something went wrong. Please try again.");
       setIsLoading(false);
     }
   };
@@ -66,14 +66,14 @@ export default function LoginPage() {
 
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">
-          <span className="inline-block text-[10px] font-mono tracking-[0.3em] font-black text-brandRed bg-brandRed/10 border border-brandRed/20 px-3 py-1 rounded-full uppercase mb-4 shadow-lg shadow-brandRed/5">
-            ATHLETE CONTROL DECK
+          <span className="inline-block text-[11px] font-mono tracking-[0.3em] font-black text-brandRed bg-brandRed/10 border border-brandRed/20 px-3 py-1 rounded-full uppercase mb-4 shadow-lg shadow-brandRed/5">
+            Admin login
           </span>
           <h1 className="font-heading font-black text-4xl sm:text-5xl text-white tracking-tight leading-none uppercase">
             AN FITNESS
           </h1>
-          <p className="text-zinc-500 text-xs sm:text-sm font-light mt-2 tracking-wide uppercase">
-            Sign in to manage the gym facility
+          <p className="text-zinc-500 text-xs sm:text-sm font-light mt-2 tracking-wide">
+            Sign in to manage the gym
           </p>
         </div>
 
@@ -89,8 +89,8 @@ export default function LoginPage() {
             )}
 
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-mono font-black text-zinc-400 uppercase tracking-widest pl-1">
-                Username or Email
+              <label className="text-[11px] font-mono font-black text-zinc-400 uppercase tracking-widest pl-1">
+                Username
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-zinc-500 pointer-events-none">
@@ -109,7 +109,7 @@ export default function LoginPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-mono font-black text-zinc-400 uppercase tracking-widest pl-1">
+              <label className="text-[11px] font-mono font-black text-zinc-400 uppercase tracking-widest pl-1">
                 Password
               </label>
               <div className="relative">
@@ -152,7 +152,7 @@ export default function LoginPage() {
                     </svg>
                   )}
                 </div>
-                <span className="text-[10px] font-mono font-black text-zinc-400 uppercase tracking-widest group-hover/check:text-zinc-300 transition-colors">
+                <span className="text-[11px] font-mono font-black text-zinc-400 uppercase tracking-widest group-hover/check:text-zinc-300 transition-colors">
                   Remember me
                 </span>
               </label>
@@ -166,11 +166,11 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  AUTHENTICATING...
+                  Signing in...
                 </>
               ) : (
                 <>
-                  ENTER CONTROL PANEL
+                  Sign in
                   <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                 </>
               )}
@@ -178,8 +178,8 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-[10px] text-center text-zinc-600 font-mono mt-6 tracking-wide uppercase">
-          Authorized Admin Personnel Only. Session logs are audited.
+        <p className="text-[11px] text-center text-zinc-600 font-mono mt-6 tracking-wide">
+          For gym staff only
         </p>
       </div>
     </div>

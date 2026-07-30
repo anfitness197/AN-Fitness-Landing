@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { getDB } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
 import { broadcastPushNotification } from "@/lib/push";
+import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
+import { getPushIconUrl, absoluteUrl } from "@/lib/site";
 
 export const runtime = "edge";
 
@@ -15,7 +17,7 @@ async function checkAuth() {
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   const { id } = params;
@@ -28,10 +30,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const cleanDesc = (description || "").toString().trim();
 
     if (!cleanTitle || !cleanDesc) {
-      return NextResponse.json(
-        { error: "Title and description text are required" },
-        { status: 400 }
-      );
+      return validationError("Please enter a title and description.");
     }
 
     const itemType = type === "notification" ? "notification" : "event";
@@ -49,7 +48,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           (time || "").toString().trim(),
           (location || "").toString().trim(),
           (posterUrl || "").toString().trim(),
-          (category || (itemType === "notification" ? "Bulletin" : "General")).toString().trim(),
+          (category || (itemType === "notification" ? "Announcement" : "General")).toString().trim(),
           itemType,
           id
         )
@@ -67,7 +66,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           (time || "").toString().trim(),
           (location || "").toString().trim(),
           (posterUrl || "").toString().trim(),
-          (category || (itemType === "notification" ? "Bulletin" : "General")).toString().trim(),
+          (category || (itemType === "notification" ? "Announcement" : "General")).toString().trim(),
           itemType,
           id
         )
@@ -79,22 +78,24 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       pushStats = await broadcastPushNotification(db, {
         title: itemType === "notification" ? `📢 ${cleanTitle}` : `🏋️ ${cleanTitle}`,
         body: cleanDesc.length > 120 ? `${cleanDesc.substring(0, 117)}...` : cleanDesc,
-        icon: "/assets/logos/web-app-manifest-192x192.png",
-        image: (posterUrl || "").toString().trim() || undefined,
+        icon: getPushIconUrl(),
+        image: (posterUrl || "").toString().trim()
+          ? absoluteUrl((posterUrl || "").toString().trim())
+          : undefined,
         url: "/events",
         type: itemType,
       }).catch((e) => null);
     }
 
     return NextResponse.json({ success: true, pushStats });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to update event" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't update event. Please try again.");
   }
 }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   const { id } = params;
@@ -103,7 +104,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const db = getDB();
     await db.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to delete event" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't delete event. Please try again.");
   }
 }

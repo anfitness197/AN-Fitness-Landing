@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getDB } from "@/lib/db";
 import { verifySession, hashPassword, comparePassword } from "@/lib/auth";
+import { apiError, unauthorizedError, validationError, notFoundError } from "@/lib/api-errors";
 
 export const runtime = "edge";
 
@@ -22,23 +23,23 @@ export async function GET() {
 export async function POST(request: Request) {
   const token = cookies().get("auth-token")?.value;
   if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   const session = await verifySession(token);
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   try {
     const { oldPassword, newPassword } = await request.json();
 
     if (!oldPassword || !newPassword) {
-      return NextResponse.json({ error: "Both current and new passwords are required" }, { status: 400 });
+      return validationError("Please enter your current and new password.");
     }
 
     if (newPassword.length < 6) {
-      return NextResponse.json({ error: "New password must be at least 6 characters long" }, { status: 400 });
+      return validationError("New password must be at least 6 characters.");
     }
 
     const db = getDB();
@@ -48,12 +49,12 @@ export async function POST(request: Request) {
       .first<{ username: string; passwordHash: string }>();
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return notFoundError("Account not found.");
     }
 
     const isValid = await comparePassword(oldPassword, user.passwordHash);
     if (!isValid) {
-      return NextResponse.json({ error: "Incorrect current password" }, { status: 400 });
+      return validationError("Current password is incorrect.");
     }
 
     const newHash = await hashPassword(newPassword);
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
       .run();
 
     return NextResponse.json({ success: true, message: "Password updated successfully" });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to update password" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't update password. Please try again.");
   }
 }

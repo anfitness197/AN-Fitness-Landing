@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getDB } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
+import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
+import { jsonCached } from "@/lib/http-cache";
 
 export const runtime = "edge";
 
@@ -26,22 +28,19 @@ export async function GET() {
         text: "REFER 4 FRIENDS & GET 1 MONTH FREE!",
         active: 1,
       };
-      return NextResponse.json(defaultBanner);
+      return jsonCached(defaultBanner, 60);
     }
 
     const data = JSON.parse(result.value);
-    return NextResponse.json(data);
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || "Failed to fetch settings" },
-      { status: 500 }
-    );
+    return jsonCached(data, 60);
+  } catch (err) {
+    return apiError(err, 500, "Couldn't load settings. Please try again.");
   }
 }
 
 export async function POST(request: Request) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   try {
@@ -49,7 +48,7 @@ export async function POST(request: Request) {
     const { badge, text, active } = body;
 
     if (!text) {
-      return NextResponse.json({ error: "Text content is required" }, { status: 400 });
+      return validationError("Please enter announcement text.");
     }
 
     const db = getDB();
@@ -65,10 +64,7 @@ export async function POST(request: Request) {
       .run();
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || "Failed to save settings" },
-      { status: 500 }
-    );
+  } catch (err) {
+    return apiError(err, 500, "Couldn't save announcement. Please try again.");
   }
 }

@@ -1,7 +1,4 @@
-/**
- * Cloudinary API Integration helper module.
- * Supports signed uploads using API Key & Secret, or unsigned uploads using Upload Preset.
- */
+
 
 export interface CloudinaryUploadResult {
   success: boolean;
@@ -90,14 +87,14 @@ export async function uploadToCloudinary(
   formData.append("file", file, fileName || (file as File).name || "upload");
 
   if (apiKey && apiSecret) {
-    // Signed Upload
+    
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const paramsToSign: Record<string, string> = {
       folder,
       timestamp,
     };
 
-    // Sort parameters alphabetically
+    
     const sortedKeys = Object.keys(paramsToSign).sort();
     const signatureBase =
       sortedKeys.map((k) => `${k}=${paramsToSign[k]}`).join("&") + apiSecret;
@@ -108,7 +105,7 @@ export async function uploadToCloudinary(
     formData.append("signature", signature);
     formData.append("folder", folder);
   } else if (uploadPreset) {
-    // Unsigned Upload
+    
     formData.append("upload_preset", uploadPreset);
     if (folder) {
       formData.append("folder", folder);

@@ -33,6 +33,8 @@ interface GymItem {
 export default function EventsList() {
   const [items, setItems] = useState<GymItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [activeTab, setActiveTab] = useState<"all" | "event" | "notification">("all");
   const [activePoster, setActivePoster] = useState<{ url: string; title: string } | null>(null);
 
@@ -42,17 +44,28 @@ export default function EventsList() {
   const [pushStatusMsg, setPushStatusMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadItems() {
+      setLoading(true);
+      setLoadError(false);
       try {
         const res = await fetch("/api/events");
         const data = await res.json();
+        if (cancelled) return;
         if (res.ok && Array.isArray(data)) {
           setItems(data);
+        } else {
+          setItems([]);
+          setLoadError(true);
         }
       } catch (err) {
         console.error("Failed to load events/notifications:", err);
+        if (!cancelled) {
+          setItems([]);
+          setLoadError(true);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -72,9 +85,9 @@ export default function EventsList() {
         navigator.serviceWorker.addEventListener("message", (event) => {
           if (event.data?.type === "PUSH_NOTIFICATION_RECEIVED") {
             const notif = event.data.notification;
-            const notifTitle = notif?.title || "AN Fitness Notification";
+            const notifTitle = notif?.title || "AN Fitness";
             const notifBody = notif?.body || "New update received!";
-            setPushStatusMsg(`🔔 ${notifTitle}: ${notifBody}`);
+            setPushStatusMsg(`${notifTitle}: ${notifBody}`);
           }
         });
       }
@@ -82,17 +95,20 @@ export default function EventsList() {
 
     loadItems();
     checkPushStatus();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [retryKey]);
 
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
 
   const handleTogglePush = async () => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setPushStatusMsg("Push notifications are not supported in this browser.");
+      setPushStatusMsg("Alerts are not supported in this browser.");
       return;
     }
 
-    // Unsubscribe flow
+    
     if (isSubscribed) {
       setSubscribing(true);
       setPushStatusMsg(null);
@@ -109,23 +125,23 @@ export default function EventsList() {
           }).catch(() => {});
         }
         setIsSubscribed(false);
-        setPushStatusMsg("Push notifications disabled.");
+        setPushStatusMsg("Alerts turned off.");
       } catch (err: any) {
         console.error("Push unsubscribe error:", err);
-        setPushStatusMsg(err.message || "Failed to unsubscribe.");
+        setPushStatusMsg("Couldn't turn off alerts. Please try again.");
       } finally {
         setSubscribing(false);
       }
       return;
     }
 
-    // If already denied, show message
+    
     if (typeof Notification !== "undefined" && Notification.permission === "denied") {
-      setPushStatusMsg("Notifications are blocked in browser settings. Click the lock icon in the address bar to allow Notifications.");
+      setPushStatusMsg("Notifications are blocked in browser settings. Click the lock icon in the address bar to allow them.");
       return;
     }
 
-    // Show the custom permission dialog before triggering the browser prompt
+    
     setShowPermissionDialog(true);
   };
 
@@ -147,7 +163,7 @@ export default function EventsList() {
       const keyRes = await fetch("/api/push/subscribe");
       const keyData = await keyRes.json();
       if (!keyRes.ok || !keyData.publicKey) {
-        throw new Error(keyData.error || "Failed to retrieve VAPID public key");
+        throw new Error("KEY_FAILED");
       }
 
       const existingSub = await reg.pushManager.getSubscription();
@@ -168,15 +184,14 @@ export default function EventsList() {
       });
 
       if (!saveRes.ok) {
-        const errData = await saveRes.json();
-        throw new Error(errData.error || "Failed to save subscription");
+        throw new Error("SAVE_FAILED");
       }
 
       setIsSubscribed(true);
-      setPushStatusMsg("Push alerts enabled successfully!");
+      setPushStatusMsg("Alerts turned on successfully!");
     } catch (err: any) {
       console.error("Push subscription error:", err);
-      setPushStatusMsg(err.message || "Failed to update notification subscription.");
+      setPushStatusMsg("Couldn't turn on alerts. Please try again.");
     } finally {
       setSubscribing(false);
     }
@@ -184,7 +199,7 @@ export default function EventsList() {
 
   const handlePermissionDeny = () => {
     setShowPermissionDialog(false);
-    setPushStatusMsg("You can enable push alerts anytime by tapping the button above.");
+    setPushStatusMsg("You can turn on alerts anytime by tapping the button above.");
   };
 
   const eventsCount = items.filter((i) => i.type !== "notification").length;
@@ -201,7 +216,22 @@ export default function EventsList() {
     return (
       <div className="py-20 flex flex-col items-center justify-center gap-4">
         <Loader2 size={32} className="animate-spin text-brandRed" />
-        <span className="text-xs uppercase tracking-widest font-mono text-zinc-500">Loading Bulletin & Events...</span>
+        <span className="text-xs sm:text-sm text-zinc-500">Loading...</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="py-16 text-center border border-brandRed/20 rounded-2xl bg-brandRed/5 gap-3 px-4 flex flex-col items-center">
+        <p className="text-sm text-zinc-300">We couldn&apos;t load news and events. Please try again.</p>
+        <button
+          type="button"
+          onClick={() => setRetryKey((k) => k + 1)}
+          className="mt-1 px-5 py-2.5 rounded-full bg-brandRed hover:bg-brandRed-light text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -217,19 +247,19 @@ export default function EventsList() {
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <h3 className="font-heading uppercase font-bold text-sm sm:text-base text-white tracking-wide">
-                AN FITNESS PUSH NOTIFICATIONS
+                Gym alerts
               </h3>
               {isSubscribed && (
-                <span className="text-[9px] font-mono uppercase bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold px-2 py-0.5 rounded">
-                  SUBSCRIBED
+                <span className="text-[11px] font-mono uppercase bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold px-2 py-0.5 rounded">
+                  On
                 </span>
               )}
             </div>
             <p className="text-xs text-zinc-400 font-light max-w-xl">
-              Get instant alerts for workshops, class schedules, member offers, and urgent gym announcements directly on your device.
+              Get instant alerts for workshops, class schedules, member offers, and gym announcements on your device.
             </p>
             {pushStatusMsg && (
-              <span className={`text-[11px] font-mono mt-1 flex items-center gap-1 ${isSubscribed ? "text-emerald-400" : "text-amber-400"}`}>
+              <span className={`text-xs mt-1 flex items-center gap-1 ${isSubscribed ? "text-emerald-400" : "text-amber-400"}`}>
                 <AlertCircle size={12} /> {pushStatusMsg}
               </span>
             )}
@@ -239,7 +269,7 @@ export default function EventsList() {
         <button
           onClick={handleTogglePush}
           disabled={subscribing}
-          className={`shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs uppercase font-bold tracking-wider transition-all duration-300 z-10 cursor-pointer ${
+          className={`shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs uppercase font-bold tracking-wider transition-all duration-300 z-10 cursor-pointer ${
             isSubscribed
               ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700"
               : "bg-brandRed hover:bg-brandRed-light text-white shadow-lg shadow-brandRed/20"
@@ -248,17 +278,17 @@ export default function EventsList() {
           {subscribing ? (
             <>
               <Loader2 size={14} className="animate-spin" />
-              <span>PROCESSING...</span>
+              <span>Please wait...</span>
             </>
           ) : isSubscribed ? (
             <>
               <BellOff size={14} />
-              <span>DISABLE ALERTS</span>
+              <span>Turn off alerts</span>
             </>
           ) : (
             <>
               <BellRing size={14} />
-              <span>ENABLE PUSH ALERTS</span>
+              <span>Turn on alerts</span>
             </>
           )}
         </button>
@@ -267,45 +297,45 @@ export default function EventsList() {
       <div className="flex items-center gap-2 border-b border-zinc-800 pb-3 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab("all")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
             activeTab === "all"
               ? "bg-zinc-800 text-white border border-zinc-700 shadow-md"
               : "text-zinc-400 hover:text-white hover:bg-zinc-900/60"
           }`}
         >
           <Layers size={14} className={activeTab === "all" ? "text-brandRed" : ""} />
-          <span>ALL BULLETIN</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${activeTab === "all" ? "bg-brandRed text-white" : "bg-zinc-900 text-zinc-400"}`}>
+          <span>All</span>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "all" ? "bg-brandRed text-white" : "bg-zinc-900 text-zinc-400"}`}>
             {totalCount}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab("event")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
             activeTab === "event"
               ? "bg-zinc-800 text-white border border-zinc-700 shadow-md"
               : "text-zinc-400 hover:text-white hover:bg-zinc-900/60"
           }`}
         >
           <Dumbbell size={14} className={activeTab === "event" ? "text-brandRed" : ""} />
-          <span>UPCOMING EVENTS</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${activeTab === "event" ? "bg-brandRed text-white" : "bg-zinc-900 text-zinc-400"}`}>
+          <span>Upcoming events</span>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "event" ? "bg-brandRed text-white" : "bg-zinc-900 text-zinc-400"}`}>
             {eventsCount}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab("notification")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
             activeTab === "notification"
               ? "bg-zinc-800 text-white border border-zinc-700 shadow-md"
               : "text-zinc-400 hover:text-white hover:bg-zinc-900/60"
           }`}
         >
           <Megaphone size={14} className={activeTab === "notification" ? "text-amber-400" : ""} />
-          <span>NOTIFICATIONS & ANNOUNCEMENTS</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${activeTab === "notification" ? "bg-amber-500 text-black" : "bg-zinc-900 text-zinc-400"}`}>
+          <span>Announcements</span>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "notification" ? "bg-amber-500 text-black" : "bg-zinc-900 text-zinc-400"}`}>
             {notificationsCount}
           </span>
         </button>
@@ -442,30 +472,30 @@ export default function EventsList() {
 
             <div className="flex flex-col gap-2">
               <h3 className="font-heading uppercase font-black text-lg text-white tracking-wide">
-                Enable Push Notifications?
+                Turn on gym alerts?
               </h3>
               <p className="text-zinc-400 text-sm leading-relaxed font-light">
-                Get instant alerts for new events, class schedules, special offers, and important gym announcements directly on your device.
+                Get instant alerts for new events, class schedules, special offers, and important gym announcements on your device.
               </p>
             </div>
 
             <div className="flex flex-col gap-2.5 w-full mt-1">
               <button
                 onClick={handlePermissionAccept}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brandRed hover:bg-brandRed-light text-white font-mono text-xs uppercase font-bold tracking-wider transition-all shadow-lg shadow-brandRed/20 cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brandRed hover:bg-brandRed-light text-white text-xs uppercase font-bold tracking-wider transition-all shadow-lg shadow-brandRed/20 cursor-pointer"
               >
                 <BellRing size={16} />
-                Allow Notifications
+                Allow notifications
               </button>
               <button
                 onClick={handlePermissionDeny}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs uppercase font-bold tracking-wider transition-all border border-zinc-700 cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs uppercase font-bold tracking-wider transition-all border border-zinc-700 cursor-pointer"
               >
-                Not Now
+                Not now
               </button>
             </div>
 
-            <p className="text-zinc-600 text-[10px] font-mono uppercase tracking-wider">
+            <p className="text-zinc-600 text-[11px]">
               You can change this anytime in settings
             </p>
           </div>

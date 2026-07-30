@@ -76,7 +76,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({ title, links = [] 
               key={link.href}
               href={link.href}
               className={cn(
-                "text-[9px] sm:text-[10px] md:text-xs font-bold tracking-wider sm:tracking-widest uppercase transition-all whitespace-nowrap pb-1 border-b-2",
+                "text-xs md:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all whitespace-nowrap pb-1 border-b-2",
                 activeAnchor === link.href
                   ? "text-brandRed border-brandRed font-black"
                   : "text-zinc-500 border-transparent hover:text-zinc-300"

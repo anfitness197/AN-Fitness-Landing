@@ -3,6 +3,9 @@ import { cookies } from "next/headers";
 import { getDB } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
 import { broadcastPushNotification } from "@/lib/push";
+import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
+import { getPushIconUrl, absoluteUrl } from "@/lib/site";
+import { jsonCached } from "@/lib/http-cache";
 
 export const runtime = "edge";
 
@@ -25,15 +28,15 @@ export async function GET(request: Request) {
       type: item.type || "event",
     }));
 
-    return NextResponse.json(items);
-  } catch (err: any) {
-    return NextResponse.json([]);
+    return jsonCached(items, 30);
+  } catch (err) {
+    return apiError(err, 500, "Couldn't load events. Please try again.");
   }
 }
 
 export async function POST(request: Request) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   try {
@@ -44,10 +47,7 @@ export async function POST(request: Request) {
     const cleanDesc = (description || "").toString().trim();
 
     if (!cleanTitle || !cleanDesc) {
-      return NextResponse.json(
-        { error: "Title and description text are required" },
-        { status: 400 }
-      );
+      return validationError("Please enter a title and description.");
     }
 
     const itemType = type === "notification" ? "notification" : "event";
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
           (time || "").toString().trim(),
           (location || "").toString().trim(),
           (posterUrl || "").toString().trim(),
-          (category || (itemType === "notification" ? "Bulletin" : "General")).toString().trim(),
+          (category || (itemType === "notification" ? "Announcement" : "General")).toString().trim(),
           itemType
         )
         .run();
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
           (time || "").toString().trim(),
           (location || "").toString().trim(),
           (posterUrl || "").toString().trim(),
-          (category || (itemType === "notification" ? "Bulletin" : "General")).toString().trim(),
+          (category || (itemType === "notification" ? "Announcement" : "General")).toString().trim(),
           itemType
         )
         .run();
@@ -98,8 +98,10 @@ export async function POST(request: Request) {
       pushStats = await broadcastPushNotification(db, {
         title: itemType === "notification" ? `📢 ${cleanTitle}` : `🏋️ New Event: ${cleanTitle}`,
         body: cleanDesc.length > 120 ? `${cleanDesc.substring(0, 117)}...` : cleanDesc,
-        icon: "/assets/logos/web-app-manifest-192x192.png",
-        image: (posterUrl || "").toString().trim() || undefined,
+        icon: getPushIconUrl(),
+        image: (posterUrl || "").toString().trim()
+          ? absoluteUrl((posterUrl || "").toString().trim())
+          : undefined,
         url: "/events",
         type: itemType,
       }).catch((e) => {
@@ -113,7 +115,7 @@ export async function POST(request: Request) {
       id: eventId,
       pushStats,
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to create event/notification" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't save event. Please try again.");
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getDB } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
+import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
 
 export const runtime = "edge";
 
@@ -14,7 +15,7 @@ async function checkAuth() {
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   const { id } = params;
@@ -24,7 +25,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const { title, subtitle, price, badge, features, whatsappText, active } = body;
 
     if (!title || !price) {
-      return NextResponse.json({ error: "title and price are required fields" }, { status: 400 });
+      return validationError("Please enter a title and price.");
     }
 
     const db = getDB();
@@ -45,14 +46,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       .run();
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to update offer" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't update offer. Please try again.");
   }
 }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   const { id } = params;
@@ -61,7 +62,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const db = getDB();
     await db.prepare("DELETE FROM offers WHERE id = ?").bind(id).run();
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to delete offer" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't delete offer. Please try again.");
   }
 }

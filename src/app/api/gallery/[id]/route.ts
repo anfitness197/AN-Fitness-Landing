@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getDB, getR2 } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
+import { apiError, unauthorizedError } from "@/lib/api-errors";
 
 export const runtime = "edge";
 
@@ -14,7 +15,7 @@ async function checkAuth() {
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   if (!(await checkAuth())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedError();
   }
 
   const rawId = params.id ? decodeURIComponent(params.id) : "";
@@ -44,7 +45,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     }
 
     return NextResponse.json({ success: true, message: "Gallery item deleted successfully" });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to delete gallery item" }, { status: 500 });
+  } catch (err) {
+    return apiError(err, 500, "Couldn't delete gallery item. Please try again.");
   }
 }

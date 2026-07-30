@@ -190,7 +190,6 @@ export default function AdminDashboard() {
   const [adminEventsFilter, setAdminEventsFilter] = useState<"all" | "event" | "notification">("all");
   const [showQuickPushForm, setShowQuickPushForm] = useState(false);
 
-
   const [pushStatus, setPushStatus] = useState<{ subscriberCount: number; vapidPublicKey: string; vapidSubject: string } | null>(null);
   const [isLoadingPush, setIsLoadingPush] = useState(false);
   const [pushTitle, setPushTitle] = useState("");
@@ -283,15 +282,15 @@ export default function AdminDashboard() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Broadcast failed");
+      if (!res.ok) throw new Error(data.error || "Couldn't send alert");
 
-      addToast(data.message || "Push notification broadcasted successfully!", "success");
+      addToast(data.message || "Alert sent successfully!", "success");
       setPushTitle("");
       setPushMessage("");
       setPushImage("");
       fetchPushStatus();
     } catch (err: any) {
-      addToast(err.message || "Failed to broadcast notification", "error");
+      addToast(err.message || "Couldn't send alert. Please try again.", "error");
     } finally {
       setIsBroadcasting(false);
     }
@@ -310,7 +309,6 @@ export default function AdminDashboard() {
 
     }
   };
-
 
   const fetchOffers = async () => {
     setIsLoadingOffers(true);
@@ -370,7 +368,6 @@ export default function AdminDashboard() {
     }
   };
 
-
   const fetchMemberships = async () => {
     setIsLoadingMemberships(true);
     try {
@@ -427,7 +424,6 @@ export default function AdminDashboard() {
       showMessage(err.message || "Failed to delete membership plan", true);
     }
   };
-
 
   const fetchGallery = async () => {
     setIsLoadingGallery(true);
@@ -493,7 +489,7 @@ export default function AdminDashboard() {
                 : t
             )
           );
-          addToast("Something went wrong. Try uploading other images.", "error");
+          addToast("Couldn't prepare that file. Please try another one.", "error");
         } else {
           setUploadTasks((prev) =>
             prev.map((t) =>
@@ -521,7 +517,7 @@ export default function AdminDashboard() {
               : t
           )
         );
-        addToast("Something went wrong. Try uploading other images.", "error");
+        addToast("Couldn't prepare that file. Please try another one.", "error");
       }
     }
   };
@@ -575,7 +571,7 @@ export default function AdminDashboard() {
             id: fileId,
             url: fileUrl,
             category: task.category,
-            title: task.title || "Untitled Lift",
+            title: task.title || "Untitled",
             type: uploadData.type || (task.file.type.startsWith("video/") ? "video" : "image"),
           }),
         });
@@ -595,7 +591,7 @@ export default function AdminDashboard() {
               : t
           )
         );
-        addToast("Something went wrong. Try uploading other images.", "error");
+        addToast("Couldn't prepare that file. Please try another one.", "error");
       }
     }
 
@@ -631,7 +627,6 @@ export default function AdminDashboard() {
       addToast(err.message || "Failed to delete item", "error");
     }
   };
-
 
   const fetchEvents = async () => {
     setIsLoadingEvents(true);
@@ -718,7 +713,6 @@ export default function AdminDashboard() {
     }
   };
 
-
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -770,7 +764,7 @@ export default function AdminDashboard() {
 
       addToast("Announcement banner updated successfully!", "success");
     } catch (err: any) {
-      addToast("Something went wrong. Try uploading other images.", "error");
+      addToast("Couldn't save announcement. Please try again.", "error");
     } finally {
       setIsSavingAnnouncement(false);
     }
@@ -785,7 +779,6 @@ export default function AdminDashboard() {
       router.push("/an-admin/login");
     }
   };
-
 
   const getFeaturesArray = (features: any): string[] => {
     if (Array.isArray(features)) return features;
@@ -818,7 +811,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white">
         <Loader2 size={32} className="animate-spin text-brandRed mb-4" />
-        <span className="text-xs uppercase tracking-widest font-mono text-zinc-500">Checking credentials...</span>
+        <span className="text-xs uppercase tracking-widest font-mono text-zinc-500">Checking sign-in...</span>
       </div>
     );
   }
@@ -833,7 +826,7 @@ export default function AdminDashboard() {
             <span className="w-2.5 h-2.5 rounded-full bg-brandRed animate-pulse shadow-[0_0_8px_#D61A1F]" />
             <h2 className="font-heading font-black tracking-widest text-lg uppercase">AN FITNESS</h2>
           </div>
-          <span className="text-[9px] text-zinc-500 font-mono tracking-widest uppercase mt-1 block">ADMIN CONSOLE</span>
+          <span className="text-[9px] text-zinc-500 font-mono tracking-widest uppercase mt-1 block">ADMIN</span>
         </div>
 
         <nav className="flex-1 p-4 flex flex-col gap-1.5">
@@ -875,7 +868,7 @@ export default function AdminDashboard() {
               }`}
           >
             <Calendar size={16} />
-            Events & Notifications
+            Events
           </button>
           <button
             onClick={() => setActiveTab("settings")}
@@ -1165,7 +1158,7 @@ export default function AdminDashboard() {
                           </div>
 
                           <div className="mb-4">
-                            <label className="text-[9px] font-mono text-zinc-500 uppercase block mb-1">WhatsApp Claim Message</label>
+                            <label className="text-[9px] font-mono text-zinc-500 uppercase block mb-1">WhatsApp message</label>
                             <input
                               type="text"
                               value={newOffer.whatsappText}
@@ -1211,7 +1204,7 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="text-zinc-500 text-xs space-y-4 max-w-sm mt-4 md:mt-12 pl-2">
-                        <p className="font-mono uppercase text-brandRed font-black">Inline Card Guidelines</p>
+                        <p className="font-mono uppercase text-brandRed font-black">Offer tips</p>
                         <ul className="list-disc pl-4 space-y-2">
                           <li>The <span className="text-zinc-300">Badge</span> serves as the ribbon highlight on top.</li>
                           <li>Separate the card features with a simple <span className="text-zinc-300">new line</span>. Do not type hyphens or bullet characters.</li>
@@ -1326,7 +1319,7 @@ export default function AdminDashboard() {
                               />
                             </div>
                             <div>
-                              <label className="text-[8px] font-mono text-zinc-500 uppercase block mb-1">WhatsApp Template Text</label>
+                              <label className="text-[8px] font-mono text-zinc-500 uppercase block mb-1">WhatsApp message</label>
                               <input
                                 type="text"
                                 defaultValue={offer.whatsappText}
@@ -1480,7 +1473,7 @@ export default function AdminDashboard() {
                             <textarea
                               value={newMembership.features as string}
                               onChange={(e) => setNewMembership({ ...newMembership, features: e.target.value })}
-                              placeholder="Full gym deck access&#10;Free locker rooms&#10;General guidance"
+                              placeholder="Full gym access&#10;Free locker rooms&#10;General guidance"
                               className="bg-zinc-950 border border-zinc-800 focus:border-brandRed text-xs text-zinc-300 placeholder-zinc-700 rounded-md outline-none w-full h-24 px-3 py-2 resize-none"
                             />
                           </div>
@@ -1518,7 +1511,7 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="text-zinc-500 text-xs space-y-4 max-w-sm mt-4 md:mt-12 pl-2">
-                        <p className="font-mono uppercase text-brandRed font-black">Plan Guidelines</p>
+                        <p className="font-mono uppercase text-brandRed font-black">Plan tips</p>
                         <ul className="list-disc pl-4 space-y-2">
                           <li>Type the pricing as a raw number. The frontend formats the currency automatically.</li>
                           <li>Select <span className="text-zinc-300">Highlight Card</span> to render a glowing red border around the card on the membership page to attract attention.</li>
@@ -1808,7 +1801,7 @@ export default function AdminDashboard() {
                                       className="bg-zinc-950 border border-zinc-900 text-[10px] text-zinc-400 rounded-lg px-2 py-1 outline-none cursor-pointer"
                                       disabled={isUploading || task.status === "success"}
                                     >
-                                      <option value="strength">STRENGTH DECK</option>
+                                      <option value="strength">STRENGTH FLOOR</option>
                                       <option value="combat">COMBAT ZONE</option>
                                       <option value="recovery">RECOVERY SPA</option>
                                       <option value="facility">FACILITY ROOMS</option>
@@ -1865,7 +1858,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Gallery Media Filter Controls */}
               <div className="flex flex-wrap items-center justify-between gap-4 bg-zinc-900/20 border border-zinc-900 rounded-2xl p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   {[
@@ -1974,12 +1966,12 @@ export default function AdminDashboard() {
                 <div>
                   <h3 className="font-heading font-black text-xl text-white uppercase tracking-tight flex items-center gap-3">
                     <Calendar className="text-brandRed" size={22} />
-                    EVENTS & NOTIFICATIONS
+                    Events & announcements
                   </h3>
                   <p className="text-zinc-500 text-xs mt-1 flex items-center gap-2">
-                    <span>Manage upcoming events, workshops, announcements, and bulletins.</span>
+                    <span>Manage upcoming events, workshops, and announcements.</span>
                     <span className="text-emerald-400 font-mono font-bold bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px]">
-                      📢 {pushStatus?.subscriberCount ?? 0} Push Subscribers
+                      {pushStatus?.subscriberCount ?? 0} alert subscribers
                     </span>
                   </p>
                 </div>
@@ -1998,10 +1990,10 @@ export default function AdminDashboard() {
                       type: "event",
                       sendPush: true
                     })}
-                    className="inline-flex items-center gap-2 bg-brandRed hover:bg-red-700 text-white font-bold text-xs uppercase tracking-widest px-4 py-3 rounded-xl transition-all cursor-pointer shadow-lg shadow-brandRed/20"
+                    className="inline-flex items-center gap-2 bg-brandRed hover:bg-brandRed-light text-white font-bold text-xs uppercase tracking-widest px-4 py-3 rounded-xl transition-all cursor-pointer shadow-lg shadow-brandRed/20"
                   >
                     <Plus size={16} />
-                    CREATE EVENT
+                    Create event
                   </button>
 
                   <button
@@ -2013,14 +2005,14 @@ export default function AdminDashboard() {
                       time: "",
                       location: "AN Fitness, Khordha",
                       posterUrl: "",
-                      category: "Bulletin Notice",
+                      category: "Announcement",
                       type: "notification",
                       sendPush: true
                     })}
                     className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs uppercase tracking-widest px-4 py-3 rounded-xl transition-all cursor-pointer shadow-lg shadow-amber-500/20"
                   >
                     <Megaphone size={16} />
-                    CREATE NOTIFICATION
+                    Create announcement
                   </button>
 
                   <button
@@ -2028,7 +2020,7 @@ export default function AdminDashboard() {
                     className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 font-bold text-xs uppercase tracking-widest px-4 py-3 rounded-xl transition-all cursor-pointer"
                   >
                     <Bell size={16} className="text-brandRed" />
-                    {showQuickPushForm ? "HIDE QUICK PUSH" : "⚡ QUICK PUSH"}
+                    {showQuickPushForm ? "Hide quick alert" : "Quick alert"}
                   </button>
                 </div>
               </div>
@@ -2038,7 +2030,7 @@ export default function AdminDashboard() {
                   <div className="border-b border-zinc-800 pb-4 flex items-center justify-between">
                     <h4 className="font-heading font-black text-base uppercase tracking-wider text-white flex items-center gap-2">
                       <Send size={16} className="text-amber-500" />
-                      QUICK ANNOUNCEMENT & INSTANT PUSH BROADCAST
+                      QUICK ANNOUNCEMENT
                     </h4>
                     <button
                       onClick={() => setShowQuickPushForm(false)}
@@ -2051,19 +2043,19 @@ export default function AdminDashboard() {
                   <form onSubmit={handleSendManualPush} className="flex flex-col gap-5">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">NOTIFICATION / EVENT TITLE *</label>
+                        <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">Title *</label>
                         <input
                           type="text"
                           value={pushTitle}
                           onChange={(e) => setPushTitle(e.target.value)}
-                          placeholder="e.g. 📢 SPECIAL ANNOUNCEMENT: GYM TIMINGS UPDATE"
+                          placeholder="e.g. Special announcement: gym timings update"
                           className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-4 py-3 rounded-xl text-xs text-white outline-none"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">CATEGORY TYPE</label>
+                          <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">Category</label>
                           <select
                             value={pushType}
                             onChange={(e) => setPushType(e.target.value as "event" | "notification")}
@@ -2075,7 +2067,7 @@ export default function AdminDashboard() {
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">TARGET LINK</label>
+                          <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">Link (optional)</label>
                           <input
                             type="text"
                             value={pushUrl}
@@ -2088,7 +2080,7 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">MESSAGE BODY & BULLETIN DETAILS *</label>
+                      <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">Message *</label>
                       <textarea
                         rows={3}
                         value={pushMessage}
@@ -2099,7 +2091,7 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">ATTACHMENT IMAGE / POSTER URL (OPTIONAL)</label>
+                      <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">Poster image (optional)</label>
                       <div className="flex gap-2 items-center">
                         <input
                           type="text"
@@ -2134,12 +2126,12 @@ export default function AdminDashboard() {
                       {isBroadcasting ? (
                         <>
                           <Loader2 size={16} className="animate-spin" />
-                          PUBLISHING & SENDING PUSH ALERTS...
+                          Publishing & sending alerts...
                         </>
                       ) : (
                         <>
                           <Send size={16} />
-                          PUBLISH POST & SEND PUSH ALERTS NOW
+                          Publish & send alerts
                         </>
                       )}
                     </button>
@@ -2152,8 +2144,8 @@ export default function AdminDashboard() {
                   <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
                     <h4 className="font-heading font-black text-base uppercase tracking-wider text-white">
                       {newEvent
-                        ? newEvent.type === "notification" ? "CREATE NEW NOTIFICATION" : "CREATE NEW EVENT"
-                        : "EDIT DETAILS"}
+                        ? newEvent.type === "notification" ? "Create announcement" : "Create event"
+                        : "Edit details"}
                     </h4>
                     <button
                       onClick={() => { setNewEvent(null); setEditingEventId(null); }}
@@ -2172,7 +2164,7 @@ export default function AdminDashboard() {
                         <div className="flex flex-col gap-4">
                           <div className="grid grid-cols-2 gap-3">
                             <div className="flex flex-col gap-1.5">
-                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">PUBLISH TYPE *</label>
+                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">Type *</label>
                               <select
                                 value={activeEvent.type || "event"}
                                 onChange={(e) => {
@@ -2182,13 +2174,13 @@ export default function AdminDashboard() {
                                 }}
                                 className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-3 py-3 rounded-xl text-xs text-white outline-none cursor-pointer"
                               >
-                                <option value="event">🏋️ EVENT / WORKSHOP</option>
-                                <option value="notification">📢 NOTIFICATION / BULLETIN</option>
+                                <option value="event">Event / Workshop</option>
+                                <option value="notification">Announcement</option>
                               </select>
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">PUSH ALERT</label>
+                              <label className="text-[10px] font-mono uppercase font-bold text-zinc-400">Send alert</label>
                               <label className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-3 rounded-xl cursor-pointer">
                                 <input
                                   type="checkbox"
@@ -2200,7 +2192,7 @@ export default function AdminDashboard() {
                                   }}
                                   className="w-4 h-4 accent-brandRed cursor-pointer"
                                 />
-                                <span className="text-[11px] font-mono text-zinc-300">PUSH ALERT</span>
+                                <span className="text-[11px] text-zinc-300">Also send to phones</span>
                               </label>
                             </div>
                           </div>
@@ -2343,7 +2335,7 @@ export default function AdminDashboard() {
                             </button>
                             <button
                               onClick={() => handleSaveEvent(activeEvent, !!newEvent)}
-                              className="px-6 py-3 rounded-xl bg-brandRed hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 cursor-pointer"
+                              className="px-6 py-3 rounded-xl bg-brandRed hover:bg-brandRed-light text-white text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 cursor-pointer"
                             >
                               <Save size={14} />
                               SAVE & PUBLISH
@@ -2376,7 +2368,7 @@ export default function AdminDashboard() {
                   className={`px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${adminEventsFilter === "notification" ? "bg-zinc-800 text-white border border-zinc-700" : "text-zinc-500 hover:text-white"
                     }`}
                 >
-                  NOTIFICATIONS ONLY ({events.filter(e => e.type === "notification").length})
+                  Announcements only ({events.filter(e => e.type === "notification").length})
                 </button>
               </div>
 
@@ -2387,7 +2379,7 @@ export default function AdminDashboard() {
                   </div>
                 ) : events.length === 0 ? (
                   <div className="py-16 text-center text-zinc-600 text-xs font-mono uppercase tracking-widest">
-                    No items published yet. Click "CREATE EVENT" or "CREATE NOTIFICATION" to publish.
+                    No items yet. Click &quot;Create event&quot; or &quot;Create announcement&quot; to publish.
                   </div>
                 ) : (
                   <div className="flex flex-col gap-4">
@@ -2427,7 +2419,7 @@ export default function AdminDashboard() {
                                       : "bg-brandRed/10 border-brandRed/20 text-brandRed"
                                       }`}
                                   >
-                                    {isNotif ? "📢 NOTIFICATION" : "🏋️ EVENT"}
+                                    {isNotif ? "Announcement" : "Event"}
                                   </span>
 
                                   <span className="text-[8px] font-mono font-bold tracking-widest text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded uppercase">

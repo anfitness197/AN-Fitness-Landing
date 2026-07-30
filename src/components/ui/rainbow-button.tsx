@@ -15,7 +15,7 @@ export const RainbowButton = React.forwardRef<HTMLButtonElement, RainbowButtonPr
           "relative cursor-pointer group transition-all duration-300 active:scale-95",
           "inline-flex items-center justify-center gap-2 shrink-0 px-6 py-3",
           "rounded-full outline-none text-sm font-semibold tracking-wider uppercase text-white",
-          "border border-red-500/20 bg-zinc-950 overflow-hidden",
+          "border border-brandRed/20 bg-zinc-950 overflow-hidden",
           
           "bg-[linear-gradient(#121213,#121213),linear-gradient(#121213_50%,rgba(18,18,19,0.6)_80%,rgba(18,18,19,0)),linear-gradient(90deg,#D61A1F,#8A1013,#D61A1F,#1E0506,#D61A1F)]",
           "bg-[length:200%] [background-clip:padding-box,border-box,border-box] [background-origin:border-box]",
