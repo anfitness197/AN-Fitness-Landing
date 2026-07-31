@@ -54,13 +54,13 @@ export default function Home() {
           </p>
 
           <p className="text-zinc-400 text-[10px] xs:text-[11px] sm:text-sm md:text-base max-w-lg font-light tracking-wide leading-relaxed">
-            Welcome to AN Fitness. Start your journey today with our state-of-the-art strength equipment, and expert personal coaching.
+            Welcome to AN Fitness. Start your journey today with our best in class hydraulic equipment, and expert personal coaching.
           </p>
 
           <div className="flex flex-col items-center gap-3 sm:gap-4 mt-6 sm:mt-8 w-full max-w-md mx-auto">
             <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
               <RainbowButton as="span" className="w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-3.5 text-xs sm:text-sm font-black tracking-widest uppercase">
-                Join on WhatsApp
+                Join Now
               </RainbowButton>
             </a>
 

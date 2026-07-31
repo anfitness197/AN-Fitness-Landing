@@ -111,7 +111,7 @@ export default function GalleryPage() {
             return;
           }
         }
-      } catch {}
+      } catch { }
 
       try {
         const res = await fetch("/api/gallery");
@@ -124,7 +124,7 @@ export default function GalleryPage() {
               GALLERY_CACHE_KEY,
               JSON.stringify({ data, timestamp: Date.now() })
             );
-          } catch {}
+          } catch { }
         } else {
           setPhotos([]);
           setLoadError(true);
@@ -153,7 +153,7 @@ export default function GalleryPage() {
     return (photo.category || "").toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  
+
   const handleCategoryChange = (catId: string) => {
     setSelectedCategory(catId);
     setLightboxIndex(null);
@@ -186,7 +186,7 @@ export default function GalleryPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (document.fullscreenElement) {
-          document.exitFullscreen().catch(() => {});
+          document.exitFullscreen().catch(() => { });
         }
         setLightboxIndex(null);
       } else if (e.key === "ArrowLeft") {
@@ -205,16 +205,16 @@ export default function GalleryPage() {
   const toggleFullscreen = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+      document.documentElement.requestFullscreen().catch(() => { });
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => { });
     }
   };
 
   const closeLightbox = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => { });
     }
     setLightboxIndex(null);
   };
@@ -239,7 +239,7 @@ export default function GalleryPage() {
             Gallery
           </h1>
           <p className="text-zinc-500 text-xs sm:text-sm md:text-base max-w-xl font-light">
-            Browse our workout areas, training spaces, recovery saunas, and gym facilities.
+            Browse our workout areas, training spaces, and gym facilities.
           </p>
         </div>
 
@@ -329,13 +329,13 @@ export default function GalleryPage() {
       </div>
 
       {currentPhoto && (
-        <div 
+        <div
           onClick={closeLightbox}
           className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6"
         >
 
-          <div 
-            onClick={(e) => e.stopPropagation()} 
+          <div
+            onClick={(e) => e.stopPropagation()}
             className="w-full max-w-6xl flex justify-between items-center z-[110]"
           >
             <div className="flex flex-col">
@@ -368,7 +368,7 @@ export default function GalleryPage() {
             </div>
           </div>
 
-          <div 
+          <div
             onClick={(e) => e.stopPropagation()}
             className="relative max-w-5xl max-h-[78vh] w-full flex-1 flex items-center justify-center my-auto p-2"
           >
