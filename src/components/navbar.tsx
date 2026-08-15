@@ -41,6 +41,11 @@ const navItems: NavItem[] = [
     subheading: "View our facilities",
   },
   {
+    heading: "Shop",
+    href: "/shop",
+    subheading: "Visit our shop",
+  },
+  {
     heading: "Events",
     href: "/events",
     subheading: "Workshops & notices",
@@ -279,7 +284,7 @@ export const Navbar: React.FC = () => {
 
           <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
             <RainbowButton as="span" className="px-3 py-1.5 sm:px-4 md:px-6 md:py-2 text-[11px] sm:text-xs">
-              Join on WhatsApp
+              Join Now
             </RainbowButton>
           </a>
 

@@ -12,35 +12,16 @@ export const HeroVideo: React.FC = () => {
       }
     };
 
-    const checkPreloader = () => {
-      const isDone = document.documentElement.classList.contains("preloader-done") ||
-                     document.documentElement.classList.contains("preloader-exit-start");
-      if (isDone) {
-        playVideo();
-        return true;
-      }
-      return false;
-    };
-
-    if (checkPreloader()) return;
-
     const handlePreloaderDone = () => {
       playVideo();
     };
 
-    window.addEventListener("preloader-done", handlePreloaderDone);
-    window.addEventListener("preloader-exit-start", handlePreloaderDone);
-
-    const interval = setInterval(() => {
-      if (checkPreloader()) {
-        clearInterval(interval);
-      }
-    }, 100);
+    window.addEventListener("preloader-done", handlePreloaderDone, { passive: true });
+    window.addEventListener("preloader-exit-start", handlePreloaderDone, { passive: true });
 
     return () => {
       window.removeEventListener("preloader-done", handlePreloaderDone);
       window.removeEventListener("preloader-exit-start", handlePreloaderDone);
-      clearInterval(interval);
     };
   }, []);
 
@@ -50,7 +31,8 @@ export const HeroVideo: React.FC = () => {
       loop
       muted
       playsInline
-      preload="auto"
+      preload="metadata"
+      poster="/assets/hero/hero-poster.webp"
       className="absolute inset-0 w-full h-full object-cover scale-105"
     >
       <source src="/assets/hero/hero-1080p.webm" type="video/webm" />

@@ -122,24 +122,13 @@ export const GalleryCarousel: React.FC<GalleryCarouselProps> = ({ photos }) => {
         {photos.map((photo) => {
           const isVideo = isVideoUrl(photo.url, photo.type);
           const thumb = isVideo ? getMediaThumbnail(photo.url, photo.type) : photo.url;
-          const hasImageThumb = !isVideo || thumb !== photo.url;
           return (
             <div
               key={photo.id}
               className="w-[240px] xs:w-[260px] sm:w-[285px] md:w-[350px] shrink-0 snap-start snap-always"
             >
               <div className="relative aspect-square overflow-hidden bg-zinc-900 border border-zinc-900 hover:border-zinc-800 rounded-2xl sm:rounded-3xl group shadow-xl transition-all duration-300">
-                {hasImageThumb ? (
-                  <GalleryImage src={thumb} alt={photo.title} />
-                ) : (
-                  <video
-                    src={photo.url}
-                    className="w-full h-full object-cover filter brightness-[0.88]"
-                    muted
-                    playsInline
-                    preload="metadata"
-                  />
-                )}
+                <GalleryImage src={thumb} alt={photo.title} />
                 {isVideo && (
                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none z-[5]">
                     <div className="w-10 h-10 rounded-full bg-brandRed/90 backdrop-blur-md flex items-center justify-center text-white shadow-lg border border-white/20 group-hover:scale-110 transition-transform">

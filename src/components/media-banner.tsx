@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { X, Volume2, VolumeX, Play, Pause } from "lucide-react";
+import { getVideoPlaybackUrl } from "@/lib/cloudinary";
 
 const DISMISS_KEY = "an_media_banner_dismissed";
 const SESSION_KEY = "an_media_banner_session";
@@ -215,7 +216,7 @@ export const MediaBanner: React.FC = () => {
             <audio
               ref={mediaRef as React.RefObject<HTMLAudioElement>}
               src={banner.mediaUrl}
-              preload="auto"
+              preload="metadata"
               onEnded={() => setPlaying(false)}
               onError={() => close(false)}
               onPlay={() => {
@@ -241,10 +242,10 @@ export const MediaBanner: React.FC = () => {
           <>
             <video
               ref={mediaRef as React.RefObject<HTMLVideoElement>}
-              src={banner.mediaUrl}
+              src={getVideoPlaybackUrl(banner.mediaUrl)}
               playsInline
               muted={muted}
-              preload="auto"
+              preload="metadata"
               className="max-w-full max-h-full w-auto h-auto object-contain"
               style={
                 banner.width && banner.height

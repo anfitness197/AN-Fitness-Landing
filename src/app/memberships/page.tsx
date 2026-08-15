@@ -37,7 +37,7 @@ export default function MembershipsPage() {
         const data = await res.json();
         if (cancelled) return;
         if (res.ok && Array.isArray(data)) {
-          const formattedPlans = data.map((plan: any) => {
+          const formattedPlans = data.map((plan: MembershipPlan) => {
             let parsedFeatures: string[] = [];
             try {
               if (Array.isArray(plan.features)) {

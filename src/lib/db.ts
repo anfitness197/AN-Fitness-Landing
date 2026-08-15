@@ -1,22 +1,24 @@
-export interface D1Result<T = any> {
+type Row = Record<string, unknown>;
+
+export interface D1Result<T = unknown> {
   results?: T[];
   success: boolean;
   error?: string;
-  meta?: any;
+  meta?: Record<string, unknown>;
 }
 
 export interface D1PreparedStatement {
-  bind(...values: any[]): D1PreparedStatement;
-  first<T = any>(colName?: string): Promise<T | null>;
-  run<T = any>(): Promise<D1Result<T>>;
-  all<T = any>(): Promise<D1Result<T>>;
+  bind(...values: unknown[]): D1PreparedStatement;
+  first<T = Row>(colName?: string): Promise<T | null>;
+  run<T = unknown>(): Promise<D1Result<T>>;
+  all<T = unknown>(): Promise<D1Result<T>>;
 }
 
 export interface D1Database {
   prepare(query: string): D1PreparedStatement;
   dump(): Promise<ArrayBuffer>;
-  batch<T = any>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
-  exec<T = any>(query: string): Promise<D1Result<T>>;
+  batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
+  exec<T = unknown>(query: string): Promise<D1Result<T>>;
 }
 
 export interface R2Object {
@@ -29,19 +31,33 @@ export interface R2Object {
 }
 
 export interface R2Bucket {
-  get(key: string): Promise<any | null>;
-  put(key: string, value: any, options?: any): Promise<R2Object>;
+  get(key: string): Promise<unknown | null>;
+  put(
+    key: string,
+    value: Uint8Array | ArrayBuffer | string | Blob,
+    options?: Record<string, unknown>
+  ): Promise<R2Object>;
   delete(key: string): Promise<void>;
+}
+
+interface CloudflareD1ApiResponse {
+  success: boolean;
+  errors?: { message: string }[];
+  result?: {
+    success?: boolean;
+    results?: unknown[];
+    meta?: Record<string, unknown>;
+  }[];
 }
 
 class HttpD1PreparedStatement implements D1PreparedStatement {
   constructor(
     private sql: string,
-    private params: any[] = [],
+    private params: unknown[] = [],
     private config: { accountId: string; databaseId: string; apiToken: string }
   ) {}
 
-  bind(...values: any[]): D1PreparedStatement {
+  bind(...values: unknown[]): D1PreparedStatement {
     return new HttpD1PreparedStatement(this.sql, values, this.config);
   }
 
@@ -66,7 +82,7 @@ class HttpD1PreparedStatement implements D1PreparedStatement {
       throw new Error(`D1 HTTP API call failed: ${errText}`);
     }
 
-    const data: any = await res.json();
+    const data = (await res.json()) as CloudflareD1ApiResponse;
     if (!data.success) {
       const err = data.errors?.[0] || { message: "Unknown D1 HTTP error" };
       throw new Error(`D1 HTTP Query failed: ${err.message}`);
@@ -80,19 +96,19 @@ class HttpD1PreparedStatement implements D1PreparedStatement {
     };
   }
 
-  async first<T = any>(colName?: string): Promise<T | null> {
+  async first<T = Row>(colName?: string): Promise<T | null> {
     const res = await this.runQuery();
-    const row = res.results?.[0];
+    const row = res.results?.[0] as Row | undefined;
     if (!row) return null;
-    if (colName) return (row as any)[colName] as T;
+    if (colName) return row[colName] as T;
     return row as T;
   }
 
-  async run<T = any>(): Promise<D1Result<T>> {
+  async run<T = unknown>(): Promise<D1Result<T>> {
     return this.runQuery() as Promise<D1Result<T>>;
   }
 
-  async all<T = any>(): Promise<D1Result<T>> {
+  async all<T = unknown>(): Promise<D1Result<T>> {
     return this.runQuery() as Promise<D1Result<T>>;
   }
 }
@@ -123,18 +139,24 @@ class HttpD1Database implements D1Database {
     throw new Error("Dump is not supported over HTTP D1 client.");
   }
 
-  async batch<T = any>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]> {
+  async batch<T = unknown>(): Promise<D1Result<T>[]> {
     throw new Error("Batch is not supported over HTTP D1 client.");
   }
 
-  async exec<T = any>(query: string): Promise<D1Result<T>> {
+  async exec<T = unknown>(query: string): Promise<D1Result<T>> {
     const stmt = this.prepare(query);
     return stmt.run<T>();
   }
 }
 
+type GlobalWithBindings = typeof globalThis & {
+  DB?: D1Database;
+  IMAGE_BUCKET?: R2Bucket;
+};
+
 export function getDB(): D1Database {
-  const db = (process.env.DB || (globalThis as any).DB) as D1Database | undefined;
+  const scope = globalThis as GlobalWithBindings;
+  const db = (process.env.DB || scope.DB) as D1Database | undefined;
   if (!db) {
     return new HttpD1Database();
   }
@@ -142,7 +164,8 @@ export function getDB(): D1Database {
 }
 
 export function getR2(): R2Bucket {
-  const r2 = (process.env.IMAGE_BUCKET || (globalThis as any).IMAGE_BUCKET) as R2Bucket | undefined;
+  const scope = globalThis as GlobalWithBindings;
+  const r2 = (process.env.IMAGE_BUCKET || scope.IMAGE_BUCKET) as R2Bucket | undefined;
   if (!r2) {
     throw new Error("R2 Bucket binding 'IMAGE_BUCKET' is missing. Please configure bindings.");
   }

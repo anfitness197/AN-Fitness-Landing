@@ -53,7 +53,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           id
         )
         .run();
-    } catch (e) {
+    } catch {
       await db.exec("ALTER TABLE events ADD COLUMN type TEXT DEFAULT 'event'").catch(() => {});
       await db
         .prepare(
@@ -84,7 +84,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           : undefined,
         url: "/events",
         type: itemType,
-      }).catch((e) => null);
+      }).catch(() => null);
     }
 
     return NextResponse.json({ success: true, pushStats });

@@ -9,9 +9,10 @@ import { FeaturesCarousel } from "@/components/features-carousel";
 import { OffersCarousel } from "@/components/offers-carousel";
 import { ReviewsMarquee } from "@/components/reviews-marquee";
 import { LandingGallery } from "@/components/landing-gallery";
+import { ShopCarousel } from "@/components/shop-carousel";
 import HeroVideo from "@/components/hero-video";
 import { MediaBanner } from "@/components/media-banner";
-import { MapPin, Navigation } from "lucide-react";
+import { MapPin, Navigation, ShoppingBag } from "lucide-react";
 import { WHATSAPP_URL, MAPS_URL } from "@/lib/contact";
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ const homeSections = [
   { label: "Founder", href: "#founder" },
   { label: "Why us", href: "#features" },
   { label: "Gallery", href: "#gallery" },
+  { label: "Shop", href: "#shop" },
   { label: "Offers", href: "#offers" },
   { label: "Reviews", href: "#testimonials" },
 ];
@@ -57,18 +59,19 @@ export default function Home() {
             Welcome to AN Fitness. Start your journey today with our best in class hydraulic equipment, and expert personal coaching.
           </p>
 
-          <div className="flex flex-col items-center gap-3 sm:gap-4 mt-6 sm:mt-8 w-full max-w-md mx-auto">
-            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-              <RainbowButton as="span" className="w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-3.5 text-xs sm:text-sm font-black tracking-widest uppercase">
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8 w-full max-w-md lg:max-w-3xl mx-auto">
+            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="w-full lg:flex-1">
+              <RainbowButton as="span" className="w-full px-8 py-3.5 text-xs sm:text-sm font-black tracking-widest uppercase">
                 Join Now
               </RainbowButton>
             </a>
 
-            <div className="flex flex-row items-center justify-center gap-2.5 sm:gap-4 w-full">
-              <Link href="/memberships" className="flex-1 sm:flex-initial inline-flex items-center justify-center border border-zinc-800 hover:border-brandRed bg-zinc-950/80 hover:bg-zinc-900/50 backdrop-blur-sm text-white px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full text-xs sm:text-sm font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap">
-                View plans
+            <div className="flex flex-row items-center justify-center gap-3 sm:gap-4 w-full lg:contents">
+              <Link href="/shop" className="flex-1 lg:flex-initial lg:flex-1 inline-flex items-center justify-center border border-brandRed bg-brandRed/10 hover:bg-brandRed text-white px-5 sm:px-8 py-3.5 rounded-full text-xs sm:text-sm font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap">
+                <ShoppingBag size={14} className="mr-1.5" />
+                Visit Our Shop
               </Link>
-              <Link href="/contact" className="flex-1 sm:flex-initial inline-flex items-center justify-center border border-zinc-800 hover:border-brandRed bg-zinc-950/80 hover:bg-zinc-900/50 backdrop-blur-sm text-white hover:text-white px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full text-xs sm:text-sm font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap">
+              <Link href="/contact" className="flex-1 lg:flex-initial lg:flex-1 inline-flex items-center justify-center border border-zinc-800 hover:border-brandRed bg-zinc-950/80 hover:bg-zinc-900/50 backdrop-blur-sm text-white px-5 sm:px-8 py-3.5 rounded-full text-xs sm:text-sm font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap">
                 Contact
               </Link>
             </div>
@@ -152,6 +155,19 @@ export default function Home() {
         <LandingGallery />
       </section>
 
+      <section id="shop" className="py-16 sm:py-24 bg-zinc-950 border-t border-zinc-900 scroll-mt-24 flex flex-col gap-8 sm:gap-12">
+        <div className="text-center max-w-2xl mx-auto px-4 sm:px-6">
+          <span className="text-[10px] sm:text-xs uppercase tracking-[0.3em] font-black text-brandRed">PREMIUM SUPPLEMENTS</span>
+          <h2 className="font-heading font-black text-2xl sm:text-3xl md:text-5xl text-white uppercase mt-2">
+            AN FITNESS SHOP
+          </h2>
+          <p className="text-zinc-500 text-xs sm:text-sm md:text-base mt-3 sm:mt-4 font-light">
+            Premium supplements from top brands. Tap to enquire directly on WhatsApp.
+          </p>
+        </div>
+        <ShopCarousel />
+      </section>
+
       <section id="offers" className="py-16 sm:py-24 bg-zinc-950 border-t border-b border-zinc-900 scroll-mt-24 flex flex-col gap-8 sm:gap-12">
         <div className="max-w-7xl mx-auto w-full flex flex-col gap-8 sm:gap-12">
           <div className="text-center max-w-2xl mx-auto px-4 sm:px-6">
@@ -189,11 +205,11 @@ export default function Home() {
             Join AN Fitness now to get access to top-quality gym facilities, professional training, and a supportive community.
           </p>
           <div className="mt-3 sm:mt-4">
-            <Link href="/memberships">
+            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
               <RainbowButton as="span" className="px-8 sm:px-10 py-3 sm:py-4 text-xs sm:text-base font-bold tracking-widest shadow-2xl">
-                View plans
+                Join Now
               </RainbowButton>
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -295,6 +311,7 @@ export default function Home() {
             <div className="flex flex-wrap justify-center gap-4 sm:gap-6 font-bold uppercase tracking-wider text-xs md:text-sm">
               <Link href="/memberships" className="hover:text-white transition-colors">Memberships</Link>
               <Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link>
+              <Link href="/shop" className="hover:text-white transition-colors">Shop</Link>
               <Link href="/events" className="hover:text-white transition-colors">Events</Link>
               <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
             </div>

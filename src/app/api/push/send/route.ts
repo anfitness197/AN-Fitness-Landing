@@ -24,8 +24,8 @@ export async function GET() {
     const db = getDB();
     const vapid = await getOrInitVapidKeys(db);
 
-    const { results } = await db.prepare("SELECT COUNT(*) as count FROM push_subscriptions").all();
-    const count = (results?.[0] as any)?.count || 0;
+    const { results } = await db.prepare("SELECT COUNT(*) as count FROM push_subscriptions").all<{ count: number }>();
+    const count = results?.[0]?.count || 0;
 
     return NextResponse.json({
       subscriberCount: count,
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
             itemType
           )
           .run();
-      } catch (dbErr) {
+      } catch {
         await db.exec("ALTER TABLE events ADD COLUMN type TEXT DEFAULT 'event'").catch(() => {});
         await db
           .prepare(

@@ -22,7 +22,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({ title, links = [] 
       setIsScrolled(window.scrollY > 100);
     };
 
-    window.addEventListener("scroll", handleScrollState);
+    window.addEventListener("scroll", handleScrollState, { passive: true });
     handleScrollState();
     return () => window.removeEventListener("scroll", handleScrollState);
   }, []);
@@ -30,24 +30,29 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({ title, links = [] 
   useEffect(() => {
     if (links.length === 0) return;
 
+    let ticking = false;
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 200;
-
-      for (const link of links) {
-        const id = link.href.replace("#", "");
-        const element = document.getElementById(id);
-        if (element) {
-          const top = element.offsetTop;
-          const height = element.offsetHeight;
-          if (scrollPosition >= top && scrollPosition < top + height) {
-            setActiveAnchor(link.href);
-            break;
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const scrollPosition = window.scrollY + 200;
+        for (const link of links) {
+          const id = link.href.replace("#", "");
+          const element = document.getElementById(id);
+          if (element) {
+            const top = element.offsetTop;
+            const height = element.offsetHeight;
+            if (scrollPosition >= top && scrollPosition < top + height) {
+              setActiveAnchor(link.href);
+              break;
+            }
           }
         }
-      }
+        ticking = false;
+      });
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, [links]);

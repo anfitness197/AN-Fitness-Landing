@@ -27,7 +27,7 @@ export async function verifySession(token: string): Promise<{ username: string }
   try {
     const { payload } = await jwtVerify(token, SECRET);
     return payload as { username: string };
-  } catch (err) {
+  } catch {
     return null;
   }
 }

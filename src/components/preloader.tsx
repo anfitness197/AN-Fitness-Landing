@@ -27,7 +27,6 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
     let active = true;
     const assets = [
       { url: "/assets/logos/favicon.svg", type: "image" },
-      { url: "/assets/hero/hero-1080p.webm", type: "video" },
       { url: "/assets/images/OWNER.webp", type: "image" },
       { url: "/assets/images/zumba.webp", type: "image" },
       { url: "/assets/images/workout.webp", type: "image" },

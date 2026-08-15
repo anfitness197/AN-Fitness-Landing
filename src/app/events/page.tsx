@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Metadata } from "next";
 import EventsList from "./events-list";
 import { BackLink } from "@/components/back-link";
@@ -50,7 +50,14 @@ export default function EventsPage() {
           </p>
         </div>
 
-        <EventsList />
+        <Suspense fallback={
+          <div className="py-20 flex flex-col items-center justify-center gap-4">
+            <div className="w-8 h-8 rounded-full border-2 border-brandRed/20 border-t-brandRed animate-spin" />
+            <span className="text-xs text-zinc-500">Loading events...</span>
+          </div>
+        }>
+          <EventsList />
+        </Suspense>
       </div>
     </div>
   );

@@ -53,8 +53,9 @@ export default function LoginPage() {
 
       router.push("/an-admin");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Something went wrong. Please try again.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setError(message);
       setIsLoading(false);
     }
   };

@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getDB, getR2 } from "@/lib/db";
+import { getDB } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
 import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
 import { jsonCached } from "@/lib/http-cache";
 
 export const runtime = "edge";
+
+interface GalleryRow {
+  id: string;
+  url: string;
+  category: string;
+  title: string;
+  type?: string;
+  created_at?: number;
+  [key: string]: unknown;
+}
 
 async function checkAuth() {
   const token = cookies().get("auth-token")?.value;
@@ -22,7 +32,7 @@ export async function GET(request: Request) {
 
     const db = getDB();
     let query = "SELECT * FROM gallery";
-    const bindings: any[] = [];
+    const bindings: string[] = [];
 
     if (category && category !== "all") {
       if (category === "videos") {
@@ -43,14 +53,16 @@ export async function GET(request: Request) {
 
     if (limit && !isNaN(Number(limit)) && Number(limit) > 0) {
       query += ` LIMIT ${parseInt(limit, 10)}`;
+    } else {
+      query += ` LIMIT 24`;
     }
 
-    let results: any[] = [];
+    let results: GalleryRow[] = [];
     try {
       const stmt = db.prepare(query);
-      const res = bindings.length > 0 ? await stmt.bind(...bindings).all() : await stmt.all();
+      const res = bindings.length > 0 ? await stmt.bind(...bindings).all<GalleryRow>() : await stmt.all<GalleryRow>();
       results = res.results || [];
-    } catch (e) {
+    } catch {
       let fallbackQuery = "SELECT * FROM gallery";
       if (category && category !== "all") {
         if (category === "videos") {
@@ -66,11 +78,11 @@ export async function GET(request: Request) {
         fallbackQuery += ` LIMIT ${parseInt(limit, 10)}`;
       }
       const stmt = db.prepare(fallbackQuery);
-      const res = bindings.length > 0 ? await stmt.bind(...bindings).all() : await stmt.all();
+      const res = bindings.length > 0 ? await stmt.bind(...bindings).all<GalleryRow>() : await stmt.all<GalleryRow>();
       results = res.results || [];
     }
 
-    const items = (results || []).map((item: any) => ({
+    const items = (results || []).map((item: GalleryRow) => ({
       ...item,
       type:
         item.type ||
@@ -112,7 +124,7 @@ export async function POST(request: Request) {
         .prepare("INSERT INTO gallery (id, url, category, title, type, created_at) VALUES (?, ?, ?, ?, ?, ?)")
         .bind(id, url, category, title || "", itemType, createdAt)
         .run();
-    } catch (e) {
+    } catch {
       await db.exec("ALTER TABLE gallery ADD COLUMN type TEXT DEFAULT 'image'").catch(() => {});
       await db.exec("ALTER TABLE gallery ADD COLUMN created_at INTEGER DEFAULT 0").catch(() => {});
       await db

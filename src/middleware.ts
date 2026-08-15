@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
     try {
       await jwtVerify(token, SECRET);
       return applySecurityHeaders(NextResponse.next());
-    } catch (err) {
+    } catch {
       const response = NextResponse.redirect(new URL("/an-admin/login", request.url));
       response.cookies.delete("auth-token");
       return applySecurityHeaders(response);

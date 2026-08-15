@@ -79,9 +79,9 @@ export async function getOrInitVapidKeys(db?: D1Database): Promise<VapidKeys> {
   const database = db || getDB();
 
   try {
-    const row: any = await database
+    const row = await database
       .prepare("SELECT public_key, private_key, subject FROM vapid_keys WHERE id = 'default'")
-      .first();
+      .first<{ public_key?: string; private_key?: string; subject?: string }>();
 
     if (row && row.public_key && row.private_key) {
       const pubBytes = urlBase64ToUint8Array(row.public_key);
@@ -314,11 +314,11 @@ export async function sendWebPushNotification(
       statusCode: res.status,
       error: `Push service endpoint (${new URL(subscription.endpoint).host}) returned ${res.status}: ${errText || "Unauthorized or Bad Request"}`,
     };
-  } catch (err: any) {
+  } catch (err) {
     return {
       success: false,
       statusCode: 500,
-      error: err.message || "Failed to send web push",
+      error: err instanceof Error ? err.message : "Failed to send web push",
     };
   }
 }
@@ -342,9 +342,9 @@ export async function broadcastPushNotification(
   try {
     const { results } = await db
       .prepare("SELECT endpoint, p256dh, auth FROM push_subscriptions")
-      .all();
+      .all<{ endpoint: string; p256dh: string; auth: string }>();
     if (results && Array.isArray(results)) {
-      subscriptions = results.map((r: any) => ({
+      subscriptions = results.map((r) => ({
         endpoint: r.endpoint,
         keys: {
           p256dh: r.p256dh,

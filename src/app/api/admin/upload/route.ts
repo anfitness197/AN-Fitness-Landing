@@ -92,8 +92,11 @@ export async function POST(request: Request) {
       });
 
       if (response.ok) {
-        const resData = (await response.json()) as any;
-        if (resData.success) {
+        const resData = (await response.json()) as {
+          success?: boolean;
+          data?: { url?: string; id?: string };
+        };
+        if (resData.success && resData.data?.url) {
           return NextResponse.json({
             success: true,
             url: resData.data.url,

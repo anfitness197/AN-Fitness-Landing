@@ -38,17 +38,12 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
     window.addEventListener("load", onLoad);
     document.fonts.ready.then(onFontsLoaded);
 
-    const readyCheckInterval = setInterval(() => {
-      checkPageReady();
-    }, 200);
-
     const forceReady = setTimeout(() => {
       setIsPageReady(true);
     }, 3000);
 
     return () => {
       window.removeEventListener("load", onLoad);
-      clearInterval(readyCheckInterval);
       clearTimeout(forceReady);
     };
   }, [pathname, checkPageReady]);
@@ -111,8 +106,9 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   useEffect(() => {
     if (mounted && loading) {
       document.body.style.overflow = "hidden";
-    } else {
+    } else if (mounted) {
       document.body.style.overflow = "unset";
+      window.scrollTo(0, 0);
     }
     return () => {
       document.body.style.overflow = "unset";

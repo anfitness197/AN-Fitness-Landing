@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, X, Maximize2, Minimize2, Loader2, ImageOff, Play } from "lucide-react";
-import { getMediaThumbnail, isVideoUrl, optimizeMediaUrl } from "@/lib/cloudinary";
+import { getMediaThumbnail, isVideoUrl, optimizeMediaUrl, getVideoPlaybackUrl } from "@/lib/cloudinary";
 import { BackLink } from "@/components/back-link";
 import { PageLoading } from "@/components/page-loading";
 import { EmptyState } from "@/components/empty-state";
@@ -98,7 +98,7 @@ export default function GalleryPage() {
               setLoading(false);
             }
 
-            const res = await fetch("/api/gallery");
+            const res = await fetch("/api/gallery?limit=100");
             const freshData = await res.json();
             if (cancelled) return;
             if (res.ok && Array.isArray(freshData)) {
@@ -114,7 +114,7 @@ export default function GalleryPage() {
       } catch { }
 
       try {
-        const res = await fetch("/api/gallery");
+        const res = await fetch("/api/gallery?limit=100");
         const data = await res.json();
         if (cancelled) return;
         if (res.ok && Array.isArray(data)) {
@@ -152,7 +152,6 @@ export default function GalleryPage() {
     if (selectedCategory === "photos") return !isVideo;
     return (photo.category || "").toLowerCase() === selectedCategory.toLowerCase();
   });
-
 
   const handleCategoryChange = (catId: string) => {
     setSelectedCategory(catId);
@@ -374,10 +373,11 @@ export default function GalleryPage() {
           >
             {currentPhoto.type === "video" || /\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i.test(currentPhoto.url) || currentPhoto.url.includes("/video/upload/") ? (
               <video
-                src={currentPhoto.url}
+                src={getVideoPlaybackUrl(currentPhoto.url)}
                 controls
                 autoPlay
                 loop
+                muted
                 playsInline
                 className="max-w-full max-h-[75vh] object-contain rounded-xl sm:rounded-2xl shadow-2xl border border-zinc-800/50"
               />

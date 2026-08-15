@@ -86,7 +86,12 @@ CREATE TABLE IF NOT EXISTS admin_users (
     passwordHash TEXT
 );
 
--- Seed Initial Default Admin User
--- Username: admin, Password: admin123 (hashed with bcrypt)
+CREATE TABLE IF NOT EXISTS products (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    image TEXT NOT NULL,
+    created_at INTEGER DEFAULT 0
+);
+
 INSERT OR REPLACE INTO admin_users (username, passwordHash) VALUES ('admin', '$2a$10$wo25IyiDxc3uq.hW1vCPseKKYE/4wVdHdKi7w3MqYoL8On9SCbFkS');
 

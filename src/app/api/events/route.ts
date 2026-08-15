@@ -16,14 +16,14 @@ async function checkAuth() {
   return !!session;
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const db = getDB();
     
-    const { results } = await db.prepare("SELECT * FROM events ORDER BY id DESC").all();
+    const { results } = await db.prepare("SELECT * FROM events ORDER BY id DESC").all<{ type?: string }>();
     
     
-    const items = (results || []).map((item: any) => ({
+    const items = (results || []).map((item) => ({
       ...item,
       type: item.type || "event",
     }));
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
           itemType
         )
         .run();
-    } catch (dbErr) {
+    } catch {
       
       await db.exec("ALTER TABLE events ADD COLUMN type TEXT DEFAULT 'event'").catch(() => {});
       await db

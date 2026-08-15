@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { 
   Calendar, Clock, MapPin, Tag, Loader2, X, Maximize2, FileText, 
-  Bell, BellOff, BellRing, Megaphone, Dumbbell, Layers, CheckCircle2, AlertCircle 
+  Bell, BellOff, BellRing, Megaphone, Dumbbell, Layers, AlertCircle 
 } from "lucide-react";
 
 function urlBase64ToUint8Array(base64Url: string): Uint8Array {
@@ -31,6 +32,7 @@ interface GymItem {
 }
 
 export default function EventsList() {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<GymItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -42,6 +44,8 @@ export default function EventsList() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [pushStatusMsg, setPushStatusMsg] = useState<string | null>(null);
+
+  const shouldAutoSubscribe = searchParams.get("subscribe") === "true";
 
   useEffect(() => {
     let cancelled = false;
@@ -102,7 +106,7 @@ export default function EventsList() {
 
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
 
-  const handleTogglePush = async () => {
+  const handleTogglePush = useCallback(async () => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
       setPushStatusMsg("Alerts are not supported in this browser.");
       return;
@@ -126,7 +130,7 @@ export default function EventsList() {
         }
         setIsSubscribed(false);
         setPushStatusMsg("Alerts turned off.");
-      } catch (err: any) {
+      } catch (err) {
         console.error("Push unsubscribe error:", err);
         setPushStatusMsg("Couldn't turn off alerts. Please try again.");
       } finally {
@@ -143,7 +147,7 @@ export default function EventsList() {
 
     
     setShowPermissionDialog(true);
-  };
+  }, [isSubscribed]);
 
   const handlePermissionAccept = async () => {
     setShowPermissionDialog(false);
@@ -189,7 +193,7 @@ export default function EventsList() {
 
       setIsSubscribed(true);
       setPushStatusMsg("Alerts turned on successfully!");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Push subscription error:", err);
       setPushStatusMsg("Couldn't turn on alerts. Please try again.");
     } finally {
@@ -201,6 +205,15 @@ export default function EventsList() {
     setShowPermissionDialog(false);
     setPushStatusMsg("You can turn on alerts anytime by tapping the button above.");
   };
+
+  useEffect(() => {
+    if (shouldAutoSubscribe && pushSupported && !isSubscribed && !subscribing) {
+      const timer = setTimeout(() => {
+        handleTogglePush();
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldAutoSubscribe, pushSupported, isSubscribed, subscribing, handleTogglePush]);
 
   const eventsCount = items.filter((i) => i.type !== "notification").length;
   const notificationsCount = items.filter((i) => i.type === "notification").length;

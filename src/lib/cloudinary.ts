@@ -78,6 +78,23 @@ export function optimizeMediaUrl(url: string, width = 800): string {
   return url;
 }
 
+export function getVideoPlaybackUrl(url: string): string {
+  if (!url || !url.includes("cloudinary.com") || !url.includes("/video/upload/")) {
+    return url;
+  }
+
+  const marker = "/video/upload/";
+  const idx = url.indexOf(marker);
+  const after = url.slice(idx + marker.length);
+
+  const firstSeg = after.split("/")[0] || "";
+  if (/^(f_|q_|w_|h_|c_|so_|e_|fl_|b_|ar_|vc_|ac_|fps_)/.test(firstSeg) || firstSeg.includes(",")) {
+    return url;
+  }
+
+  return url.slice(0, idx + marker.length) + "vc_h264,f_auto,q_auto,c_limit,w_1920/" + after;
+}
+
 async function sha1Hex(message: string): Promise<string> {
   const msgUint8 = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest("SHA-1", msgUint8);
