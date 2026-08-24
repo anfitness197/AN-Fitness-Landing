@@ -54,7 +54,7 @@ export default function AdminBanner({ addToast }: AdminBannerProps) {
     if (!isVideo && !isAudio) { addToast("Please choose a video or audio file.", "error"); return; }
     setIsUploadingMediaBanner(true);
     try {
-      let uploadFile = file;
+      const uploadFile = file;
       if (isVideo) {
         if (file.size > VIDEO_MAX_UPLOAD_BYTES) {
           addToast(`Video is ${formatBytes(file.size)}. Max is ${formatBytes(VIDEO_MAX_UPLOAD_BYTES)}.`, "error");

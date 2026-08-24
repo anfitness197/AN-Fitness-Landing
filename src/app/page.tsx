@@ -1,6 +1,5 @@
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Metadata } from "next";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import { HeroHeadline } from "@/components/hero-headline";
@@ -12,6 +11,7 @@ import { LandingGallery } from "@/components/landing-gallery";
 import { ShopCarousel } from "@/components/shop-carousel";
 import HeroVideo from "@/components/hero-video";
 import { MediaBanner } from "@/components/media-banner";
+import OwnerCarousel from "@/components/owner-carousel";
 import { MapPin, Navigation, ShoppingBag } from "lucide-react";
 import { WHATSAPP_URL, MAPS_URL } from "@/lib/contact";
 
@@ -83,17 +83,7 @@ export default function Home() {
 
       <section id="founder" className="py-16 sm:py-24 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto scroll-mt-24 border-b border-zinc-900/50">
         <div className="flex flex-col lg:flex-row items-center gap-8 sm:gap-12 lg:gap-16">
-          <div className="w-full max-w-[280px] xs:max-w-[320px] sm:max-w-[380px] lg:max-w-[400px] aspect-[3/4] shrink-0 relative rounded-2xl overflow-hidden p-[1px] bg-zinc-900 border border-zinc-800 shadow-2xl">
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-brandRed/15 to-transparent animate-pulse" />
-            <Image
-              src="/assets/images/OWNER.webp"
-              alt="Anil Mahapatra - Founder of AN Fitness"
-              fill
-              className="object-cover rounded-2xl relative z-10 filter brightness-95 contrast-105"
-              draggable={false}
-              sizes="(max-width: 640px) 280px, (max-width: 768px) 380px, 400px"
-            />
-          </div>
+          <OwnerCarousel />
 
           <div className="flex flex-col items-start gap-4 sm:gap-6 text-left">
             <span className="text-[9px] sm:text-[10px] text-brandRed font-black uppercase tracking-[0.3em] font-mono bg-brandRed/10 px-3 py-1 rounded">

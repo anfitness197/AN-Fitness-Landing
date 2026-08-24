@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 import { ShoppingBag } from "lucide-react";
 import { optimizeMediaUrl } from "@/lib/cloudinary";
 import { BackLink } from "@/components/back-link";
@@ -16,7 +17,7 @@ interface Product {
 }
 
 const PRODUCTS_CACHE_KEY = "an_products_cache";
-const PRODUCTS_CACHE_TTL = 5 * 60 * 1000;
+const PRODUCTS_CACHE_TTL = 2 * 60 * 1000;
 
 const ProductImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
   const [loaded, setLoaded] = useState(false);
@@ -46,11 +47,12 @@ const ProductImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
           <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-wider">Image unavailable</span>
         </div>
       ) : (
-        <img
+        <Image
           ref={imgRef}
           src={optimized}
           alt={alt}
-          loading="lazy"
+          fill
+          unoptimized
           decoding="async"
           referrerPolicy="no-referrer"
           className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
@@ -87,7 +89,7 @@ export default function ShopPage() {
               setLoading(false);
             }
 
-            const res = await fetch("/api/products");
+            const res = await fetch("/api/products", { cache: "no-store" });
             const freshData = await res.json();
             if (cancelled) return;
             if (res.ok && Array.isArray(freshData)) {
@@ -105,7 +107,7 @@ export default function ShopPage() {
       } catch {}
 
       try {
-        const res = await fetch("/api/products");
+        const res = await fetch("/api/products", { cache: "no-store" });
         const data = await res.json();
         if (cancelled) return;
         if (res.ok && Array.isArray(data)) {
@@ -136,36 +138,20 @@ export default function ShopPage() {
     };
   }, [retryKey]);
 
-  const handleEnquire = useCallback(async (product: Product) => {
+  const handleEnquire = useCallback((product: Product) => {
     const productLabel = product.name?.trim() ? `"${product.name.trim()}"` : "this product";
-    const message = `Hi AN Fitness, I want to buy ${productLabel}. Please send me the details.`;
+    const imageUrl = product.image || "";
+    const messageLines = [
+      `Hi AN Fitness, I want to buy ${productLabel}. Please send me the details.`,
+    ];
+    if (product.name?.trim()) messageLines.push(`\nProduct: ${product.name.trim()}`);
+    if (imageUrl) messageLines.push(`Product image: ${imageUrl}`);
+    const message = messageLines.join("\n");
 
-    try {
-      if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
-        const response = await fetch(product.image);
-        const blob = await response.blob();
-        const file = new File([blob], `${product.name || "product"}.jpg`, { type: blob.type || "image/jpeg" });
-
-        const shareData: ShareData & { files?: File[] } = {
-          title: product.name || "AN Fitness Product",
-          text: message,
-        };
-
-        if (navigator.canShare({ files: [file] })) {
-          shareData.files = [file];
-        }
-
-        await navigator.share(shareData);
-        return;
-      }
-    } catch {
-      
-    }
-
-    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-      message + "\n\nProduct image: " + product.image
-    )}`;
-    window.open(whatsappUrl, "_blank");
+    window.open(
+      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`,
+      "_blank"
+    );
   }, []);
 
   return (

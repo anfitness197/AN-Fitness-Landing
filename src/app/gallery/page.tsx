@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, X, Maximize2, Minimize2, Loader2, ImageOff, Play } from "lucide-react";
 import { getMediaThumbnail, isVideoUrl, optimizeMediaUrl, getVideoPlaybackUrl } from "@/lib/cloudinary";
 import { BackLink } from "@/components/back-link";
@@ -25,7 +26,7 @@ const CATEGORIES = [
 ];
 
 const GALLERY_CACHE_KEY = "an_gallery_cache";
-const GALLERY_CACHE_TTL = 5 * 60 * 1000;
+const GALLERY_CACHE_TTL = 2 * 60 * 1000;
 
 const GalleryImage: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className = "" }) => {
   const [loaded, setLoaded] = useState(false);
@@ -58,11 +59,12 @@ const GalleryImage: React.FC<{ src: string; alt: string; className?: string }> =
           <span className="text-[9px] text-zinc-600 font-mono uppercase tracking-wider">Image Unavailable</span>
         </div>
       ) : (
-        <img
+        <Image
           ref={imgRef}
           src={optimized}
           alt={alt}
-          loading="lazy"
+          fill
+          unoptimized
           decoding="async"
           referrerPolicy="no-referrer"
           className={`${className} object-cover w-full h-full transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
@@ -98,7 +100,7 @@ export default function GalleryPage() {
               setLoading(false);
             }
 
-            const res = await fetch("/api/gallery?limit=100");
+            const res = await fetch("/api/gallery?limit=100", { cache: "no-store" });
             const freshData = await res.json();
             if (cancelled) return;
             if (res.ok && Array.isArray(freshData)) {
@@ -114,7 +116,7 @@ export default function GalleryPage() {
       } catch { }
 
       try {
-        const res = await fetch("/api/gallery?limit=100");
+        const res = await fetch("/api/gallery?limit=100", { cache: "no-store" });
         const data = await res.json();
         if (cancelled) return;
         if (res.ok && Array.isArray(data)) {
@@ -382,9 +384,12 @@ export default function GalleryPage() {
                 className="max-w-full max-h-[75vh] object-contain rounded-xl sm:rounded-2xl shadow-2xl border border-zinc-800/50"
               />
             ) : (
-              <img
-                src={currentPhoto.url}
+              <Image
+                src={optimizeMediaUrl(currentPhoto.url, 1280)}
                 alt={currentPhoto.title || "Gallery Preview"}
+                width={1280}
+                height={800}
+                unoptimized
                 className="max-w-full max-h-[75vh] object-contain rounded-xl sm:rounded-2xl select-none shadow-2xl border border-zinc-800/50"
               />
             )}

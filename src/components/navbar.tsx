@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, useMotionValue, AnimatePresence, Variants } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Instagram, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -261,9 +262,12 @@ export const Navbar: React.FC = () => {
         <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
           <div className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
 
-            <img
+            <Image
               src="/assets/logos/favicon.svg"
               alt="AN Fitness Logo"
+              width={36}
+              height={36}
+              priority
               className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(214,26,31,0.5)]"
             />
           </div>
@@ -275,11 +279,11 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
           <Link
             href="/events"
-            className="relative p-2 sm:p-2.5 rounded-full bg-zinc-900/90 border border-zinc-800 hover:border-brandRed hover:bg-zinc-900 text-zinc-300 transition-all flex items-center justify-center group cursor-pointer"
+            className="relative p-2 sm:p-2.5 rounded-full bg-zinc-900/90 border border-zinc-800 hover:border-brandRed hover:bg-zinc-900 text-zinc-300 transition-all flex items-center justify-center group cursor-pointer shrink-0"
             title="News & events"
             aria-label="View news and events"
           >
-            <Bell size={18} className="group-hover:scale-110 transition-transform text-zinc-300 group-hover:text-brandRed" />
+            <Bell className="w-[18px] h-[18px] shrink-0 group-hover:scale-110 transition-transform text-zinc-300 group-hover:text-brandRed" strokeWidth={2} aria-hidden="true" />
           </Link>
 
           <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">

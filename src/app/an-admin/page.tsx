@@ -91,7 +91,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col md:flex-row">
-      <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-zinc-900 bg-zinc-950/60 backdrop-blur-md flex flex-col shrink-0">
+      <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-zinc-900 bg-zinc-950/60 backdrop-blur-md flex flex-col shrink-0 md:sticky md:top-0 md:h-screen md:overflow-y-auto">
         <div className="p-6 border-b border-zinc-900">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-brandRed animate-pulse shadow-[0_0_8px_#D61A1F]" />
@@ -100,13 +100,13 @@ export default function AdminDashboard() {
           <span className="text-[9px] text-zinc-500 font-mono tracking-widest uppercase mt-1 block">ADMIN</span>
         </div>
 
-        <nav className="flex-1 p-4 flex flex-col gap-1.5">
+        <nav className="flex-1 p-3 sm:p-4 flex flex-row md:flex-col gap-1.5 overflow-x-auto md:overflow-visible scrollbar-none snap-x">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 cursor-pointer",
+                "shrink-0 md:w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 sm:gap-3 cursor-pointer whitespace-nowrap snap-start",
                 activeTab === tab.id
                   ? "bg-brandRed text-white shadow-lg shadow-brandRed/20"
                   : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
@@ -133,9 +133,9 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      <main className="flex-1 p-6 md:p-10 max-h-screen overflow-y-auto relative bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(63,0,2,0.15),rgba(255,255,255,0))]">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 md:max-h-screen md:overflow-y-auto relative bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(63,0,2,0.15),rgba(255,255,255,0))] min-w-0">
 
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm pointer-events-none">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-50 flex flex-col gap-3 pointer-events-none">
           {toasts.map((toast) => (
             <div
               key={toast.id}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { Trash2, Upload, Loader2, Play, X } from "lucide-react";
 import { getMediaThumbnail, isVideoUrl } from "@/lib/cloudinary";
 import { compressImageToWebp as compressImage, VIDEO_MAX_UPLOAD_BYTES } from "@/lib/media-convert";
@@ -98,40 +99,50 @@ export default function AdminGallery({ addToast }: AdminGalleryProps) {
     if (pending.length === 0) { addToast("No ready files.", "error"); return; }
     setIsUploading(true);
     let successCount = 0;
-    for (const task of pending) {
-      setUploadTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: "uploading" } : t)));
-      try {
-        const uploadFormData = new FormData();
-        uploadFormData.append("file", task.file);
-        const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: uploadFormData });
-        const uploadData = await uploadRes.json();
-        if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed");
-        const fileId = uploadData.key.replace("gallery-", "").split(".")[0];
-        const saveRes = await fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: fileId, url: uploadData.url, category: task.category, title: task.title || "Untitled", type: uploadData.type || (task.file.type.startsWith("video/") ? "video" : "image") }) });
-        if (!saveRes.ok) throw new Error();
-        successCount++;
-        setUploadTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: "success" } : t)));
-      } catch {
-        setUploadTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: "error", errorMsg: "Upload failed" } : t)));
-        addToast("Upload failed.", "error");
-      }
+    const CONCURRENCY = 3;
+    for (let i = 0; i < pending.length; i += CONCURRENCY) {
+      const batch = pending.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map(async (task) => {
+        setUploadTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: "uploading" } : t)));
+        try {
+          const uploadFormData = new FormData();
+          uploadFormData.append("file", task.file);
+          const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: uploadFormData });
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed");
+          const fileId = uploadData.key.replace("gallery-", "").split(".")[0];
+          const saveRes = await fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: fileId, url: uploadData.url, category: task.category, title: task.title || "Untitled", type: uploadData.type || (task.file.type.startsWith("video/") ? "video" : "image") }) });
+          if (!saveRes.ok) throw new Error();
+          successCount++;
+          setUploadTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: "success" } : t)));
+        } catch {
+          setUploadTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: "error", errorMsg: "Upload failed" } : t)));
+          addToast("Upload failed.", "error");
+        }
+      }));
     }
     setIsUploading(false);
-    if (successCount > 0) { addToast(`Uploaded ${successCount} file(s)!`); fetchGallery(); }
+    if (successCount > 0) {
+      addToast(`Uploaded ${successCount} file(s)!`);
+      try { sessionStorage.removeItem("an_gallery_cache"); } catch {}
+      fetchGallery();
+    }
     setTimeout(() => { setUploadTasks((prev) => { prev.filter((t) => t.status === "success").forEach((t) => URL.revokeObjectURL(t.preview)); return prev.filter((t) => t.status !== "success"); }); }, 2000);
   };
 
   const handleDeleteGallery = async (id: string) => {
     if (!confirm("Delete this media item?")) return;
+    setGallery((prev) => prev.filter((p) => p.id !== id));
     try {
       let res = await fetch(`/api/gallery?id=${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.ok) res = await fetch(`/api/gallery/${encodeURIComponent(id)}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       addToast("Deleted.");
-      fetchGallery();
+      try { sessionStorage.removeItem("an_gallery_cache"); } catch {}
     } catch (err) {
       addToast(err instanceof Error ? err.message : "Failed to delete", "error");
+      fetchGallery();
     }
   };
 
@@ -160,7 +171,7 @@ export default function AdminGallery({ addToast }: AdminGalleryProps) {
                           <video src={task.preview} className="w-full h-full object-cover" muted preload="metadata" />
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10"><Play size={14} className="text-white fill-white ml-0.5" /></div>
                         </div>
-                      ) : <img src={task.preview} alt="" className="w-full h-full object-cover" />}
+                      ) : <Image src={task.preview} alt="" fill unoptimized className="w-full h-full object-cover" />}
                       {(task.status === "compressing" || task.status === "uploading") && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20"><Loader2 size={12} className="animate-spin text-brandRed" /></div>}
                     </div>
                     <div className="flex-1 flex flex-col gap-2 min-w-0">
@@ -213,12 +224,12 @@ export default function AdminGallery({ addToast }: AdminGalleryProps) {
               <div key={photo.id} className="group relative aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-900 hover:border-zinc-800 shadow-lg transition-all">
                 {isVideo ? (
                   <div className="w-full h-full relative bg-black">
-                    <img src={thumbnailUrl} alt={photo.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-90" loading="lazy" decoding="async" />
+                    <Image src={thumbnailUrl} alt={photo.title} fill unoptimized decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-90" />
                     <div className="absolute inset-0 bg-black/20 flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-brandRed/90 flex items-center justify-center text-white"><Play size={14} className="fill-white ml-0.5" /></div></div>
                     <div className="absolute top-2 left-2 bg-black/75 backdrop-blur-md text-brandRed text-[8px] font-mono font-bold px-2 py-0.5 rounded">VIDEO</div>
                   </div>
                 ) : (
-                  <img src={photo.url} alt={photo.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-95" loading="lazy" decoding="async" />
+                  <Image src={photo.url} alt={photo.title} fill unoptimized decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-95" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-between items-start">
                   <span className="text-[8px] font-mono tracking-widest text-brandRed bg-brandRed/10 border border-brandRed/20 px-2 py-0.5 rounded uppercase">{photo.category}</span>

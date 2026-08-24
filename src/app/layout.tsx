@@ -7,14 +7,14 @@ const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
   weight: ["300", "400", "500", "600", "700", "800", "900"],
-  preload: false,
+  display: "swap",
 });
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   weight: ["300", "400", "500", "600", "700"],
-  preload: false,
+  display: "swap",
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://anfitness.in";
@@ -222,6 +222,8 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/assets/logos/favicon.svg" type="image/svg+xml" />
         <link rel="preload" href="/assets/logos/favicon.svg" as="image" type="image/svg+xml" fetchPriority="high" />
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}

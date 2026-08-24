@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, ShoppingBag, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { optimizeMediaUrl } from "@/lib/cloudinary";
@@ -13,7 +14,7 @@ interface Product {
 }
 
 const SHOP_CACHE_KEY = "an_shop_carousel_cache";
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 2 * 60 * 1000;
 
 const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
   const [loaded, setLoaded] = useState(false);
@@ -26,31 +27,18 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
     if (img?.complete && img.naturalWidth > 0) setLoaded(true);
   }, [optimized]);
 
-  const handleEnquire = useCallback(async () => {
+  const handleEnquire = useCallback(() => {
     const label = product.name?.trim() ? `"${product.name.trim()}"` : "this product";
-    const message = `Hi AN Fitness, I want to buy ${label}. Please send me the details.`;
-
-    try {
-      if (typeof navigator !== "undefined" && navigator.share) {
-        const response = await fetch(product.image);
-        const blob = await response.blob();
-        const file = new File([blob], `${product.name || "product"}.jpg`, { type: blob.type || "image/jpeg" });
-        const shareData: ShareData & { files?: File[] } = {
-          title: product.name || "AN Fitness Product",
-          text: message,
-        };
-
-        if (navigator.canShare?.({ files: [file] })) {
-          shareData.files = [file];
-        }
-
-        await navigator.share(shareData);
-        return;
-      }
-    } catch {}
+    const imageUrl = product.image || "";
+    const messageLines = [
+      `Hi AN Fitness, I want to buy ${label}. Please send me the details.`,
+    ];
+    if (product.name?.trim()) messageLines.push(`\nProduct: ${product.name.trim()}`);
+    if (imageUrl) messageLines.push(`Product image: ${imageUrl}`);
+    const message = messageLines.join("\n");
 
     window.open(
-      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message + "\n\nProduct image: " + product.image)}`,
+      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`,
       "_blank"
     );
   }, [product]);
@@ -59,13 +47,13 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
     <div className="group w-[200px] xs:w-[220px] sm:w-[260px] shrink-0 snap-start snap-always">
       <div className="relative aspect-square overflow-hidden bg-zinc-900 border border-zinc-900/80 hover:border-brandRed/50 rounded-2xl group shadow-xl transition-all duration-300">
         {!loaded && <div className="absolute inset-0 bg-zinc-900 animate-shimmer" />}
-        <img
+        <Image
           ref={imgRef}
           src={optimized}
           alt={product.name || "AN Fitness Product"}
-          className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${loaded ? "opacity-100" : "opacity-0"}`}
-          loading="lazy"
-          decoding="async"
+          fill
+          unoptimized
+          className={`object-cover transition-all duration-500 group-hover:scale-105 ${loaded ? "opacity-100" : "opacity-0"}`}
           onLoad={() => setLoaded(true)}
         />
       </div>
@@ -131,7 +119,7 @@ export const ShopCarousel: React.FC = () => {
           if (Date.now() - parsed.timestamp < CACHE_TTL && Array.isArray(parsed.data)) {
             setProducts(parsed.data);
             setLoading(false);
-            const res = await fetch("/api/products");
+            const res = await fetch("/api/products", { cache: "no-store" });
             const fresh = await res.json();
             if (res.ok && Array.isArray(fresh)) {
               setProducts(fresh);
@@ -143,7 +131,7 @@ export const ShopCarousel: React.FC = () => {
       } catch {}
 
       try {
-        const res = await fetch("/api/products");
+        const res = await fetch("/api/products", { cache: "no-store" });
         const data = await res.json();
         if (res.ok && Array.isArray(data)) {
           setProducts(data);

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { 
   Calendar, Clock, MapPin, Tag, Loader2, X, Maximize2, FileText, 
@@ -381,9 +382,11 @@ export default function EventsList() {
                       className="relative w-full h-48 sm:h-56 overflow-hidden bg-zinc-950 cursor-pointer group/poster"
                     >
 
-                      <img
+                      <Image
                         src={item.posterUrl}
                         alt={item.title}
+                        fill
+                        unoptimized
                         className="w-full h-full object-cover transition-transform duration-500 group-hover/poster:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/poster:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-mono text-xs uppercase font-bold">
@@ -459,9 +462,12 @@ export default function EventsList() {
               <X size={20} />
             </button>
 
-            <img
+            <Image
               src={activePoster.url}
               alt={activePoster.title}
+              width={1200}
+              height={800}
+              unoptimized
               className="max-h-[80vh] w-auto object-contain rounded-2xl border border-zinc-800 shadow-2xl"
             />
             <span className="font-heading uppercase font-bold text-sm text-zinc-300 tracking-wider">

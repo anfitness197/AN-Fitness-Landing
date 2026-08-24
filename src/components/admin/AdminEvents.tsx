@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Plus, Save, Trash2, Edit2, X, Upload, Loader2, Calendar,
   Megaphone, Bell, Send, FileText,
@@ -108,7 +109,7 @@ export default function AdminEvents({ addToast }: AdminEventsProps) {
 
   const handleSendManualPush = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pushTitle.trim() || !pushMessage.trim()) { addToast("Title and message required.", "error"); return; }
+    if (!pushTitle.trim()) { addToast("Title is required.", "error"); return; }
     setIsBroadcasting(true);
     try {
       const res = await fetch("/api/push/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: pushTitle.trim(), message: pushMessage.trim(), image: pushImage.trim(), url: pushUrl.trim() || "/events", type: pushType }) });
@@ -157,7 +158,7 @@ export default function AdminEvents({ addToast }: AdminEventsProps) {
                 <div className="flex flex-col gap-1.5"><label className="text-[10px] font-mono uppercase font-bold text-zinc-400">Link</label><input type="text" value={pushUrl} onChange={(e) => setPushUrl(e.target.value)} placeholder="/events" className="bg-zinc-950 border border-zinc-800 focus:border-brandRed px-3 py-3 rounded-xl text-xs text-white outline-none" /></div>
               </div>
             </div>
-            <div className="flex flex-col gap-1.5"><label className="text-[10px] font-mono uppercase font-bold text-zinc-400">Message *</label><textarea rows={3} value={pushMessage} onChange={(e) => setPushMessage(e.target.value)} placeholder="Write your announcement..." className="bg-zinc-950 border border-zinc-800 focus:border-brandRed p-4 rounded-xl text-xs text-white outline-none resize-none" /></div>
+            <div className="flex flex-col gap-1.5"><label className="text-[10px] font-mono uppercase font-bold text-zinc-400">Message <span className="text-zinc-600 normal-case">(optional — defaults to title)</span></label><textarea rows={3} value={pushMessage} onChange={(e) => setPushMessage(e.target.value)} placeholder="Optional — leave empty to use the title as the message" className="bg-zinc-950 border border-zinc-800 focus:border-brandRed p-4 rounded-xl text-xs text-white outline-none resize-none" /></div>
             <div className="flex flex-col gap-1.5"><label className="text-[10px] font-mono uppercase font-bold text-zinc-400">Poster image (optional)</label><div className="flex gap-2 items-center"><input type="text" value={pushImage} onChange={(e) => setPushImage(e.target.value)} placeholder="Image URL..." className="flex-1 bg-zinc-950 border border-zinc-800 focus:border-brandRed px-4 py-3 rounded-xl text-xs text-white outline-none" /><label className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-3 rounded-xl text-xs font-mono font-bold cursor-pointer flex items-center gap-2">{isUploadingPoster ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}UPLOAD<input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handlePosterFileUpload(file, (url) => setPushImage(url)); }} /></label></div></div>
             <button type="submit" disabled={isBroadcasting} className="mt-2 self-end inline-flex items-center gap-2 bg-brandRed hover:bg-brandRed-light disabled:opacity-60 text-white font-bold text-xs uppercase tracking-widest px-8 py-4 rounded-xl transition-all cursor-pointer">{isBroadcasting ? <><Loader2 size={16} className="animate-spin" />Sending...</> : <><Send size={16} />Publish & send</>}</button>
           </form>
@@ -224,7 +225,7 @@ export default function AdminEvents({ addToast }: AdminEventsProps) {
               return (
                 <div key={ev.id} className={`bg-zinc-950 border rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row gap-5 justify-between items-start md:items-center ${isNotif ? "border-amber-500/30 hover:border-amber-500/50" : "border-zinc-800/80 hover:border-zinc-700"}`}>
                   <div className="flex flex-col md:flex-row gap-4 items-start md:items-center flex-1">
-                    {ev.posterUrl ? <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-zinc-900 shrink-0 border border-zinc-800"><img src={ev.posterUrl} alt={ev.title} className="w-full h-full object-cover" /></div> : <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center shrink-0 p-2 text-center">{isNotif ? <Megaphone size={20} className="text-amber-500 mb-1" /> : <FileText size={20} className="text-zinc-600 mb-1" />}<span className="text-[8px] font-mono text-zinc-600 uppercase">Text Only</span></div>}
+                    {ev.posterUrl ? <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-zinc-900 shrink-0 border border-zinc-800"><Image src={ev.posterUrl} alt={ev.title} fill unoptimized className="w-full h-full object-cover" /></div> : <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center shrink-0 p-2 text-center">{isNotif ? <Megaphone size={20} className="text-amber-500 mb-1" /> : <FileText size={20} className="text-zinc-600 mb-1" />}<span className="text-[8px] font-mono text-zinc-600 uppercase">Text Only</span></div>}
                     <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className={`text-[8px] font-mono font-bold tracking-widest border px-2 py-0.5 rounded uppercase ${isNotif ? "bg-amber-500/10 border-amber-500/30 text-amber-400" : "bg-brandRed/10 border-brandRed/20 text-brandRed"}`}>{isNotif ? "Announcement" : "Event"}</span>

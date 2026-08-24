@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 
 interface PreloaderProps {
@@ -27,7 +28,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
     let active = true;
     const assets = [
       { url: "/assets/logos/favicon.svg", type: "image" },
-      { url: "/assets/images/OWNER.webp", type: "image" },
+      { url: "/assets/images/owner1.webp", type: "image" },
       { url: "/assets/images/zumba.webp", type: "image" },
       { url: "/assets/images/workout.webp", type: "image" },
       { url: "/assets/images/pt.webp", type: "image" },
@@ -46,7 +47,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
     
     const loadImage = (url: string) => {
       return new Promise<void>((resolve) => {
-        const img = new Image();
+        const img = new window.Image();
         img.src = url;
         img.onload = () => {
           handleAssetLoaded();
@@ -107,7 +108,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
         }
         return prev + 1;
       });
-    }, 150);
+    }, 80);
 
     return () => {
       active = false;
@@ -145,7 +146,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
         onComplete();
       }, 800);
       return () => clearTimeout(finishTimer);
-    }, 6000);
+    }, 3000);
 
     return () => clearTimeout(safetyTimer);
   }, [onComplete, finishPreloader]);
@@ -173,9 +174,11 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
           transition={isDone ? { duration: 0.15 } : { duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
         >
 
-          <img
+          <Image
             src="/assets/logos/favicon.svg"
             alt=""
+            width={128}
+            height={128}
             className="w-32 h-32 object-contain filter drop-shadow-[0_0_20px_rgba(214,26,31,0.6)]"
           />
         </motion.div>
@@ -195,9 +198,11 @@ export const Preloader: React.FC<PreloaderProps> = ({ isPageReady, onComplete, o
           transition={isDone ? { duration: 0.15 } : { duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
         >
 
-          <img
+          <Image
             src="/assets/logos/favicon.svg"
             alt=""
+            width={128}
+            height={128}
             className="w-32 h-32 object-contain filter drop-shadow-[0_0_20px_rgba(214,26,31,0.6)]"
           />
         </motion.div>

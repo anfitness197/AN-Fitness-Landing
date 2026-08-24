@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import FuzzyText from "@/components/ui/fuzzy-text";
 import { RainbowButton } from "@/components/ui/rainbow-button";
@@ -13,9 +14,11 @@ export default function NotFound() {
 
       <div className="relative z-10 mb-6 sm:mb-8 animate-bounce [animation-duration:3s]">
 
-        <img
+        <Image
           src="/assets/vectors/dumbbell-iron.svg"
           alt="AN Fitness Dumbbell"
+          width={96}
+          height={96}
           className="w-16 h-16 sm:w-24 sm:h-24 object-contain filter drop-shadow-[0_0_15px_rgba(214,26,31,0.6)] invert opacity-80 hover:opacity-100 hover:scale-110 transition-all duration-300"
         />
       </div>

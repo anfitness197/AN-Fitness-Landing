@@ -21,27 +21,23 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   }, []);
 
   const checkPageReady = useCallback(() => {
-    const fontsReady = document.fonts.status === "loaded";
     const documentReady = document.readyState === "complete" || document.readyState === "interactive";
-
-    if (fontsReady && documentReady) {
+    if (documentReady) {
       setIsPageReady(true);
     }
   }, []);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("an_preloader_done") === "1") {
+      setIsPageReady(true);
+      setLoading(false);
+    }
     checkPageReady();
-
     const onLoad = () => checkPageReady();
-    const onFontsLoaded = () => checkPageReady();
-
     window.addEventListener("load", onLoad);
-    document.fonts.ready.then(onFontsLoaded);
-
     const forceReady = setTimeout(() => {
       setIsPageReady(true);
-    }, 3000);
-
+    }, 1200);
     return () => {
       window.removeEventListener("load", onLoad);
       clearTimeout(forceReady);
@@ -98,7 +94,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
         setIsPageReady(true);
         document.documentElement.classList.add("preloader-done");
         window.dispatchEvent(new CustomEvent("preloader-done"));
-      }, 6000);
+      }, 3000);
       return () => clearTimeout(safetyTimer);
     }
   }, [loading]);
@@ -127,6 +123,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
           onExitStart={() => setIsExiting(true)}
           onComplete={() => {
             setLoading(false);
+            try { sessionStorage.setItem("an_preloader_done", "1"); } catch {}
             document.documentElement.classList.add("preloader-done");
             window.dispatchEvent(new CustomEvent("preloader-done"));
           }}

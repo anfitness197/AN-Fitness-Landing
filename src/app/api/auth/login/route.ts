@@ -38,6 +38,7 @@ export async function POST(request: Request) {
       maxAge: rememberMe ? 30 * 24 * 60 * 60 : 86400,
       path: "/",
     });
+    response.headers.set("Cache-Control", "no-store");
 
     return response;
   } catch (err) {

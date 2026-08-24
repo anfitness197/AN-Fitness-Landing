@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { X, Volume2, VolumeX, Play, Pause } from "lucide-react";
 import { getVideoPlaybackUrl } from "@/lib/cloudinary";
 
@@ -207,9 +208,11 @@ export const MediaBanner: React.FC = () => {
         {isAudio ? (
           <div className="flex flex-col items-center gap-6 max-w-md w-full">
             <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-brandRed/15 border border-brandRed/30 flex items-center justify-center">
-              <img
+              <Image
                 src="/assets/logos/favicon.svg"
-                alt=""
+                alt="AN Fitness Logo"
+                width={80}
+                height={80}
                 className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
               />
             </div>

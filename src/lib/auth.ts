@@ -1,9 +1,12 @@
 import { hashSync, compareSync } from "bcrypt-edge";
 import { SignJWT, jwtVerify } from "jose";
 
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "an-fitness-default-jwt-secret-key-change-this-in-prod"
-);
+const DEFAULT_SECRET = "an-fitness-default-jwt-secret-key-change-this-in-prod";
+const rawSecret = process.env.JWT_SECRET || DEFAULT_SECRET;
+if (process.env.NODE_ENV === "production" && rawSecret === DEFAULT_SECRET) {
+  console.warn("[auth] JWT_SECRET is not set — using insecure default. Set JWT_SECRET in production.");
+}
+const SECRET = new TextEncoder().encode(rawSecret);
 
 export async function hashPassword(password: string): Promise<string> {
   return hashSync(password, 10);

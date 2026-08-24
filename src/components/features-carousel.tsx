@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeatureItem {
@@ -52,16 +53,16 @@ const FeatureImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
       {error ? (
         <div className="absolute inset-0 bg-zinc-900" />
       ) : (
-        <img
+        <Image
           ref={imgRef}
           src={src}
           alt={alt}
-          className={`w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-105 ${
+          fill
+          priority={alt.includes("ZUMBA")}
+          className={`object-cover transition-all duration-700 ease-out group-hover:scale-105 ${
             loaded ? "opacity-100" : "opacity-0"
           }`}
           draggable={false}
-          loading="eager"
-          decoding="async"
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}
         />

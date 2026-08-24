@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { getMediaThumbnail, isVideoUrl, optimizeMediaUrl } from "@/lib/cloudinary";
 
@@ -45,15 +46,15 @@ const GalleryImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
           <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-wider">Failed to load</span>
         </div>
       ) : (
-        <img
+        <Image
           ref={imgRef}
           src={optimized}
           alt={alt}
-          className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-105 filter brightness-[0.88] ${
+          fill
+          unoptimized
+          className={`object-cover transition-all duration-700 ease-out group-hover:scale-105 filter brightness-[0.88] ${
             loaded ? "opacity-100" : "opacity-0"
           }`}
-          loading="lazy"
-          decoding="async"
           referrerPolicy="no-referrer"
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}

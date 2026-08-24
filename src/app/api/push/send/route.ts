@@ -47,10 +47,11 @@ export async function POST(request: Request) {
     const { title, message, bodyText, image, url, type, saveToBulletin = true } = body || {};
 
     const cleanTitle = (title || "").toString().trim();
-    const cleanBody = (message || bodyText || "").toString().trim();
+    let cleanBody = (message || bodyText || "").toString().trim();
+    if (!cleanBody) cleanBody = cleanTitle;
 
-    if (!cleanTitle || !cleanBody) {
-      return validationError("Please enter a title and message.");
+    if (!cleanTitle) {
+      return validationError("Please enter a title.");
     }
 
     const itemType = type === "event" ? "event" : "notification";

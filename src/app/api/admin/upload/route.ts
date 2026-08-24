@@ -53,7 +53,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const folder = folderHint.trim() || "an_fitness/gallery";
+    const ALLOWED_FOLDERS = new Set(["an_fitness/gallery", "an_fitness/products", "an_fitness/media-banner", "an_fitness"]);
+    const folder = ALLOWED_FOLDERS.has(folderHint.trim()) ? folderHint.trim() : "an_fitness/gallery";
+
+    const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+    const MAX_VIDEO_BYTES = 90 * 1024 * 1024;
+    const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+    const maxBytes = isVideo ? MAX_VIDEO_BYTES : isAudio ? MAX_AUDIO_BYTES : MAX_IMAGE_BYTES;
+    if (file.size > maxBytes) {
+      return validationError(`File too large. Max ${isVideo ? "90MB" : isAudio ? "20MB" : "10MB"}.`);
+    }
 
     if (isCloudinaryConfigured()) {
       try {
