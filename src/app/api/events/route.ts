@@ -4,6 +4,7 @@ import { getDB } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
 import { broadcastPushNotification } from "@/lib/push";
 import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
+import { revalidatePath } from "next/cache";
 import { getPushIconUrl, absoluteUrl } from "@/lib/site";
 import { jsonCached } from "@/lib/http-cache";
 
@@ -110,6 +111,7 @@ export async function POST(request: Request) {
       });
     }
 
+    try { revalidatePath("/events"); } catch {}
     return NextResponse.json({
       success: true,
       id: eventId,

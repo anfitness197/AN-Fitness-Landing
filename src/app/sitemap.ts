@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://anfitness.in";
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.anfitness.in").replace(/\/$/, "");
 
   return [
     {
@@ -20,6 +20,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/gallery`,
       lastModified: new Date(),
       changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/shop`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
       priority: 0.8,
     },
     {

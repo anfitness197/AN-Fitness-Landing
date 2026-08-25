@@ -4,6 +4,7 @@ import { getDB } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
 import { broadcastPushNotification } from "@/lib/push";
 import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
+import { revalidatePath } from "next/cache";
 import { getPushIconUrl, absoluteUrl } from "@/lib/site";
 
 export const runtime = "edge";
@@ -87,6 +88,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       }).catch(() => null);
     }
 
+    try { revalidatePath("/events"); } catch {}
     return NextResponse.json({ success: true, pushStats });
   } catch (err) {
     return apiError(err, 500, "Couldn't update event. Please try again.");
@@ -103,6 +105,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   try {
     const db = getDB();
     await db.prepare("DELETE FROM events WHERE id = ?").bind(id).run();
+    try { revalidatePath("/events"); } catch {}
     return NextResponse.json({ success: true });
   } catch (err) {
     return apiError(err, 500, "Couldn't delete event. Please try again.");

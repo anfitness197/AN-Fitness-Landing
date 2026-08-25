@@ -17,7 +17,7 @@ export function HeroHeadline() {
 
   return (
     <h1 className="font-heading font-black text-[13vw] xs:text-6xl sm:text-8xl md:text-[120px] lg:text-[150px] tracking-tight leading-none text-white uppercase select-none">
-      <span className="sr-only">AN Fitness - Training Club | </span>
+      <span className="block font-sans font-black text-[9px] xs:text-[10px] sm:text-xs tracking-[0.32em] text-brandRed mb-2 sm:mb-3 normal-case">AN Fitness - Best Gym in Khordha</span>
       DEMAND <br />
       <DiaTextReveal key={WORDS[index]} text={WORDS[index]} duration={1.5} delay={0.1} />
     </h1>

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     title: "Events & Announcements | AN Fitness Khordha",
     description:
       "Explore upcoming fitness workshops, Zumba masterclasses, powerlifting competitions, and special announcements at AN Fitness.",
-    url: "https://anfitness.in/events",
+      url: "https://www.anfitness.in/events",
   },
   alternates: {
     canonical: "/events",

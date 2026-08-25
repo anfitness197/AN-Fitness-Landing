@@ -10,7 +10,7 @@ const OWNER_IMAGES = [
   "/assets/images/owner3.webp",
 ];
 
-const FALLBACK_IMAGE = "/assets/images/OWNER.webp";
+const FALLBACK_IMAGE = "/assets/images/owner1.webp";
 const INTERVAL_MS = 4000;
 
 export default function OwnerCarousel() {

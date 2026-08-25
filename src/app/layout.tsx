@@ -17,7 +17,7 @@ const inter = Inter({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://anfitness.in";
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.anfitness.in").replace(/\/$/, "");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -68,9 +68,9 @@ export const metadata: Metadata = {
       "Looking for the best gym in Khordha? AN Fitness delivers state-of-the-art strength training, personal coaching, recovery areas, and Zumba classes.",
     images: [
       {
-        url: "/assets/logos/og-image.png",
-        width: 1200,
-        height: 630,
+        url: "/assets/logos/web-app-manifest-512x512.png",
+        width: 512,
+        height: 512,
         alt: "AN Fitness - Best Gym in Khordha, Odisha",
       },
     ],
@@ -80,7 +80,7 @@ export const metadata: Metadata = {
     title: "AN Fitness | Best Gym in Khordha",
     description:
       "Khordha's #1 premier gym & fitness club. Professional trainers, modern equipment, and Zumba classes.",
-    images: ["/assets/logos/og-image.png"],
+    images: ["/assets/logos/web-app-manifest-512x512.png"],
   },
   robots: {
     index: true,
@@ -147,7 +147,7 @@ const localBusinessSchema = {
     },
   ],
   priceRange: "₹₹",
-  image: `${siteUrl}/assets/logos/og-image.png`,
+  image: `${siteUrl}/assets/logos/web-app-manifest-512x512.png`,
   areaServed: {
     "@type": "City",
     name: "Khordha",

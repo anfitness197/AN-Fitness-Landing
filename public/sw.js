@@ -1,4 +1,4 @@
-const CACHE_VERSION = "an-fitness-v1";
+const CACHE_VERSION = "an-fitness-v2";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const PAGE_CACHE = `pages-${CACHE_VERSION}`;
 
@@ -47,11 +47,10 @@ const PAGE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 1 day
 
 function isStaticAsset(url) {
   const path = url.pathname;
-  return (
-    path.startsWith("/assets/") ||
-    path.startsWith("/_next/static/") ||
-    path.match(/\.(png|jpg|jpeg|webp|avif|gif|svg|ico|woff2?|ttf|otf|css|js)$/i)
-  );
+  if (path.startsWith("/_next/static/") || path.includes("/_next/static/")) return true;
+  if (path.startsWith("/assets/logos/") || path.startsWith("/assets/hero/") || path.startsWith("/assets/vectors/")) return true;
+  if (path.startsWith("/_next/image")) return false;
+  return false;
 }
 
 function isNavigationOrPage(request, url) {

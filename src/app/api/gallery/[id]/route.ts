@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getDB, getR2 } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 import { apiError, unauthorizedError } from "@/lib/api-errors";
 
 export const runtime = "edge";
@@ -40,8 +41,10 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       } catch {}
 
       await db.prepare("DELETE FROM gallery WHERE id = ? OR id = ?").bind(item.id, rawId).run();
+      try { revalidatePath("/gallery"); revalidatePath("/"); } catch {}
     } else {
       await db.prepare("DELETE FROM gallery WHERE id = ? OR id = ?").bind(rawId, params.id).run();
+      try { revalidatePath("/gallery"); revalidatePath("/"); } catch {}
     }
 
     return NextResponse.json({ success: true, message: "Gallery item deleted successfully" });

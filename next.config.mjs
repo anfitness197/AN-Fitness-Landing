@@ -34,6 +34,16 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "anfitness.in" }],
+        destination: "https://www.anfitness.in/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
@@ -48,9 +58,27 @@ const nextConfig = {
         ],
       },
       {
-        source: "/assets/:path*",
+        source: "/assets/logos/:path*",
         headers: [
-          { key: "Cache-Control", value: "public, max-age=2592000, immutable" },
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/assets/vectors/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/assets/hero/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/assets/images/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
         ],
       },
     ];

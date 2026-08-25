@@ -1,4 +1,4 @@
-const FALLBACK_SITE_URL = "https://anfitness.in";
+const FALLBACK_SITE_URL = "https://www.anfitness.in";
 
 export function getSiteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || FALLBACK_SITE_URL).replace(/\/$/, "");

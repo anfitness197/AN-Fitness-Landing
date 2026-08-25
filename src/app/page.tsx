@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "AN Fitness | Best Gym & Training Club | Khordha",
     description:
-      "Forge your steel at AN Fitness, Khordha's premier gym. State-of-the-art strength training, personal coaching, Zumba classes, and certified coaches.",
+      "Khordha's best gym for strength training, personal coaching and Zumba. Premium hydraulic equipment and certified coaches at Palla Main Road. Best in class strength training, personal coaching, Zumba classes, and certified coaches.",
   },
   alternates: {
     canonical: "/",
@@ -51,12 +51,10 @@ export default function Home() {
         <div className="relative z-10 text-center max-w-4xl px-4 sm:px-6 md:px-12 flex flex-col items-center gap-6 sm:gap-8 mt-8 sm:mt-12">
           <HeroHeadline />
 
-          <p className="text-brandRed text-[9px] xs:text-[10px] sm:text-sm md:text-lg lg:text-xl max-w-2xl font-black tracking-[0.2em] sm:tracking-[0.25em] uppercase leading-relaxed mt-2 sm:mt-3">
-            YOUR ULTIMATE DESTINATION FOR STRENGTH, FITNESS, AND HEALTH
-          </p>
+          
 
           <p className="text-zinc-400 text-[10px] xs:text-[11px] sm:text-sm md:text-base max-w-lg font-light tracking-wide leading-relaxed">
-            Welcome to AN Fitness. Start your journey today with our best in class hydraulic equipment, and expert personal coaching.
+            Khordha&apos;s best gym for strength training, personal coaching and Zumba. Premium hydraulic equipment and certified coaches at Palla Main Road.
           </p>
 
           <div className="flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8 w-full max-w-md lg:max-w-3xl mx-auto">

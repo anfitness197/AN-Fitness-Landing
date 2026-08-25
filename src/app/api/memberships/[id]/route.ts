@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getDB } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 import { apiError, unauthorizedError, validationError } from "@/lib/api-errors";
 
 export const runtime = "edge";
@@ -43,7 +44,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         id
       )
       .run();
-
+    try { revalidatePath("/memberships"); revalidatePath("/"); } catch {}
     return NextResponse.json({ success: true });
   } catch (err) {
     return apiError(err, 500, "Couldn't update membership plan. Please try again.");
@@ -60,6 +61,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   try {
     const db = getDB();
     await db.prepare("DELETE FROM memberships WHERE id = ?").bind(id).run();
+    try { revalidatePath("/memberships"); revalidatePath("/"); } catch {}
     return NextResponse.json({ success: true });
   } catch (err) {
     return apiError(err, 500, "Couldn't delete membership plan. Please try again.");
